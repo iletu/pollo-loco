@@ -8,6 +8,8 @@ class MovableObject {
     currentImage = 0;
     speed = 0.08;
 
+    otherDirection = false;
+
 
 
     // loadImage (img/test.png);

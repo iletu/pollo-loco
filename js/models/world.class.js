@@ -60,7 +60,20 @@ class World {
     }
 
     addToMap(mo) {
-        this.ctx.drawImage(mo.img, mo.x, mo.y, mo.width, mo.height);
+        let drawX = mo.x;
+
+        if (mo.otherDirection) {
+            this.ctx.save();
+            this.ctx.translate(mo.x + mo.width, 0);
+            this.ctx.scale(-1, 1);
+            drawX = 0;
+        }
+
+        this.ctx.drawImage(mo.img, drawX, mo.y, mo.width, mo.height);
+
+        if (mo.otherDirection) {
+            this.ctx.restore();
+        }
     }
 
 
