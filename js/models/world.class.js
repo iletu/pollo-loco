@@ -1,14 +1,7 @@
 class World {
     character = new Character();
-    enemies = [
-        new Chicken(),
-        new Chicken(),
-        new Chicken(),
-    ];
-    clouds = [
-        new Cloud()
-    ];
-    backgroundObjects = [];
+    level = level1;
+
     canvas;
     ctx;
     keyboard;
@@ -19,21 +12,9 @@ class World {
         this.canvas = canvas;
         this.keyboard = keyboard;
 
-        const path = 'img/5_background/layers';
-
-        for (let i = -3; i <= 3; i++) {
-            const x = i * 720;
-            const imageNumber = i % 2 === 0 ? 1 : 2;
-
-            this.backgroundObjects.push(
-                new BackgroundObject(`${path}/air.png`, x),
-                new BackgroundObject(`${path}/3_third_layer/${imageNumber}.png`, x),
-                new BackgroundObject(`${path}/2_second_layer/${imageNumber}.png`, x),
-                new BackgroundObject(`${path}/1_first_layer/${imageNumber}.png`, x)
-            );
-        }
-        this.draw();
         this.setWorld();
+        this.character.animate();
+        this.draw();
     }
 
     setWorld() {
@@ -47,10 +28,10 @@ class World {
 
         this.ctx.translate(this.camera_x, 0);
 
-        this.addObjectsToMap(this.backgroundObjects);
+        this.addObjectsToMap(this.level.backgroundObjects);
         this.addToMap(this.character);
-        this.addObjectsToMap(this.enemies);
-        this.addObjectsToMap(this.clouds);
+        this.addObjectsToMap(this.level.enemies);
+        this.addObjectsToMap(this.level.clouds);
 
         this.ctx.translate(-this.camera_x, 0);
 
