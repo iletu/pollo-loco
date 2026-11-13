@@ -10,6 +10,21 @@ class MovableObject {
 
     otherDirection = false;
 
+    speedY = 0;
+    acceleration = 2.5;
+
+    applyGravity() {
+        setInterval(() => {
+            if (this.y < 155) {
+                this.y -= this.speedY;
+                this.speedY -= this.acceleration;
+            }
+        }, 1000 / 25);
+    }
+
+    isAbouveGround() {
+        return this.y < 155;
+    }
 
 
     // loadImage (img/test.png);
