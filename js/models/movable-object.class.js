@@ -1,63 +1,67 @@
 class MovableObject {
-    x = 50;
-    y = 275;
-    img;
-    height = 150;
-    width = 100;
-    imageCache = {};
-    currentImage = 0;
-    speed = 0.08;
+  x = 50;
+  y = 275;
+  img;
+  height = 150;
+  width = 100;
+  imageCache = {};
+  currentImage = 0;
+  speed = 0.08;
 
-    otherDirection = false;
+  otherDirection = false;
 
-    speedY = 0;
-    acceleration = 2.5;
+  speedY = 0;
+  acceleration = 2.5;
 
-    applyGravity() {
-        setInterval(() => {
-            if (this.y < 155) {
-                this.y -= this.speedY;
-                this.speedY -= this.acceleration;
-            }
-        }, 1000 / 25);
-    }
+  groundY = 155;
 
-    isAbouveGround() {
-        return this.y < 155;
-    }
+  applyGravity() {
+    setInterval(() => {
+      if (this.isAboveGround() || this.speedY > 0) {
+        this.y -= this.speedY;
+        this.speedY -= this.acceleration;
 
+        if (this.y >= this.groundY) {
+          this.y = this.groundY;
+          this.speedY = 0;
+        }
+      }
+    }, 1000 / 25);
+  }
 
-    // loadImage (img/test.png);
-    loadImage(path) {
-        this.img = new Image(); // this.img = document.getElementById('img') <img id="image" src>
-        this.img.src = path;
-    }
+  isAboveGround() {
+    return this.y < this.groundY;
+  }
 
-    loadImages(arr) {
-        arr.forEach((path) => {
-            let img = new Image();
-            img.src = path;
-            this.imageCache[path] = img;
-        });
-    }
+  // loadImage (img/test.png);
+  loadImage(path) {
+    this.img = new Image(); // this.img = document.getElementById('img') <img id="image" src>
+    this.img.src = path;
+  }
 
+  loadImages(arr) {
+    arr.forEach((path) => {
+      let img = new Image();
+      img.src = path;
+      this.imageCache[path] = img;
+    });
+  }
 
-    moveRight() {
-        console.log('Moving right');
-    }
+  moveRight() {
+    console.log("Moving right");
+  }
 
-    moveLeft() {
-        setInterval(() => {
-            this.x -= this.speed;
-        }, 1000 / 60);
-    }
+  moveLeft() {
+    setInterval(() => {
+      this.x -= this.speed;
+    }, 1000 / 60);
+  }
 
-    playAnimation(images) {
-        // Walk animation
-        let i = this.currentImage % this.IMAGES_WALKING.length;
-        let path = images[i];
-        this.img = this.imageCache[path];
-        this.currentImage++;
-    }
-
+  playAnimation(images) {
+    // Walk animation
+    let i = this.currentImage % images.length;
+    let path = images[i];
+    this.img = this.imageCache[path];
+    this.currentImage++;
+  }
 }
