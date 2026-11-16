@@ -15,11 +15,16 @@ class MovableObject {
 
   groundY = 155;
 
-  applyGravity() {
+  applyGravity(onTakeoff) {
     setInterval(() => {
-      if (this.isAboveGround() || this.speedY > 0) {
+      const wasAboveGround = this.isAboveGround();
+      if (wasAboveGround || this.speedY > 0) {
         this.y -= this.speedY;
         this.speedY -= this.acceleration;
+
+        if (!wasAboveGround && this.isAboveGround()) {
+          onTakeoff?.();
+        }
 
         if (this.y >= this.groundY) {
           this.y = this.groundY;
@@ -37,6 +42,30 @@ class MovableObject {
   loadImage(path) {
     this.img = new Image(); // this.img = document.getElementById('img') <img id="image" src>
     this.img.src = path;
+  }
+
+  draw(ctx) {
+    ctx.drawImage(this.img, this.x, this.y, this.width, this.height);
+  }
+
+  drawFrame(ctx) {
+    if (this instanceof Character || this instanceof Chicken) {
+      ctx.beginPath();
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = "blue";
+      ctx.rect(this.x, this.y, this.width, this.height);
+      ctx.stroke();
+    }
+  }
+
+  // Prüft, ob sich die beiden Rechtecke überlappen.
+  isColliding(mo) {
+    return (
+      this.x + this.width > mo.x &&
+      this.y + this.height > mo.y &&
+      this.x < mo.x + mo.width &&
+      this.y < mo.y + mo.height
+    );
   }
 
   loadImages(arr) {

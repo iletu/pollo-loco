@@ -15,10 +15,21 @@ class World {
     this.setWorld();
     // this.character.animate();
     this.draw();
+    this.checkCollisions();
   }
 
   setWorld() {
     this.character.world = this;
+  }
+
+  checkCollisions() {
+    setInterval(() => {
+      this.level.enemies.forEach((enemy) => {
+        if (this.character.isColliding(enemy)) {
+          console.log("Collision with Character ", enemy);
+        }
+      });
+    }, 200);
   }
 
   draw() {
@@ -49,19 +60,27 @@ class World {
   }
 
   addToMap(mo) {
-    let drawX = mo.x;
-
     if (mo.otherDirection) {
-      this.ctx.save();
-      this.ctx.translate(mo.x + mo.width, 0);
-      this.ctx.scale(-1, 1);
-      drawX = 0;
+      this.flipImage(mo);
     }
 
-    this.ctx.drawImage(mo.img, drawX, mo.y, mo.width, mo.height);
+    mo.draw(this.ctx);
+    mo.drawFrame(this.ctx);
 
     if (mo.otherDirection) {
-      this.ctx.restore();
+      this.flipImageBack(mo);
     }
+  }
+
+  flipImage(mo) {
+    this.ctx.save();
+    this.ctx.translate(mo.width, 0);
+    this.ctx.scale(-1, 1);
+    mo.x = mo.x * -1;
+  }
+
+  flipImageBack(mo) {
+    mo.x = mo.x * -1;
+    this.ctx.restore();
   }
 }
