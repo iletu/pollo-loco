@@ -12,6 +12,8 @@ class MovableObject {
 
   speedY = 0;
   acceleration = 2.5;
+  energy = 100;
+  lastHit = -Infinity;
 
   groundY = 155;
 
@@ -66,6 +68,18 @@ class MovableObject {
       this.x < mo.x + mo.width &&
       this.y < mo.y + mo.height
     );
+  }
+
+  hit() {
+    this.energy -= 5;
+    this.lastHit = Date.now();
+    if (this.energy < 0) {
+      this.energy = 0;
+    }
+  }
+
+  isDead() {
+    return this.energy == 0;
   }
 
   loadImages(arr) {

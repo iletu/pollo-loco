@@ -29,12 +29,30 @@ class Character extends MovableObject {
   ];
   IMAGES_AIRBORNE = this.IMAGES_JUMPING.slice(3, 6);
 
+  IMAGES_HURT = [
+    "img/2_character_pepe/4_hurt/H-41.png",
+    "img/2_character_pepe/4_hurt/H-42.png",
+    "img/2_character_pepe/4_hurt/H-43.png",
+  ];
+
+  IMAGES_DEAD = [
+    "img/2_character_pepe/5_dead/D-51.png",
+    "img/2_character_pepe/5_dead/D-52.png",
+    "img/2_character_pepe/5_dead/D-53.png",
+    "img/2_character_pepe/5_dead/D-54.png",
+    "img/2_character_pepe/5_dead/D-55.png",
+    "img/2_character_pepe/5_dead/D-56.png",
+    "img/2_character_pepe/5_dead/D-57.png",
+  ];
+
   world;
 
   constructor() {
     super().loadImage("img/2_character_pepe/2_walk/W-21.png");
     this.loadImages(this.IMAGES_WALKING);
     this.loadImages(this.IMAGES_JUMPING);
+    this.loadImages(this.IMAGES_HURT);
+    this.loadImages(this.IMAGES_DEAD);
     this.applyGravity(() => {
       this.img = this.imageCache[this.IMAGES_AIRBORNE[0]];
     });
@@ -43,6 +61,7 @@ class Character extends MovableObject {
   }
 
   animate() {
+    const animationInterval = 50;
     setInterval(() => {
       const { keyboard, level } = this.world;
 
@@ -69,6 +88,17 @@ class Character extends MovableObject {
     }, 1000 / 60);
 
     setInterval(() => {
+      if (this.isDead()) {
+        this.playAnimation(this.IMAGES_DEAD);
+        return;
+      }
+
+      const hurtFrame = Math.floor((Date.now() - this.lastHit) / animationInterval);
+      if (hurtFrame < this.IMAGES_HURT.length) {
+        this.img = this.imageCache[this.IMAGES_HURT[hurtFrame]];
+        return;
+      }
+
       if (this.isAboveGround()) {
         const jumpProgress =
           (this.jumpSpeed - this.speedY) / (2 * this.jumpSpeed);
@@ -98,7 +128,7 @@ class Character extends MovableObject {
       } else {
         this.img = this.imageCache[this.IMAGES_WALKING[0]];
       }
-    }, 50);
+    }, animationInterval);
   }
 
   updateCamera() {
@@ -111,7 +141,10 @@ class Character extends MovableObject {
     const panProgress = Math.max(0, (this.x - panStartX) / panDistance);
     const extraPan = Math.min(0, cameraEndX - centeredEndX) * panProgress;
 
-    this.world.camera_x = Math.max(cameraEndX, Math.min(0, centerX - this.x + extraPan));
+    this.world.camera_x = Math.max(
+      cameraEndX,
+      Math.min(0, centerX - this.x + extraPan),
+    );
   }
 
   jump() {
