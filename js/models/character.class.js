@@ -5,7 +5,10 @@ class Character extends MovableObject {
   y = 50;
   speed = 8;
   jumpSpeed = 25;
+  // idle = bereit, takeoff = abdrücken, jumping = Sprung, landing = abfedern.
   jumpState = "idle";
+  // Merkt sich das nächste Bild für die Vorbereitung oder Landung.
+  jumpFrame = 0;
 
   IMAGES_WALKING = [
     "img/2_character_pepe/2_walk/W-21.png",
@@ -16,6 +19,7 @@ class Character extends MovableObject {
     "img/2_character_pepe/2_walk/W-26.png",
   ];
 
+  // J-31 bis J-33 am Boden, J-34 bis J-36 in der Luft, J-37 bis J-39 bei der Landung.
   IMAGES_JUMPING = [
     "img/2_character_pepe/3_jump/J-31.png",
     "img/2_character_pepe/3_jump/J-32.png",
@@ -27,7 +31,6 @@ class Character extends MovableObject {
     "img/2_character_pepe/3_jump/J-38.png",
     "img/2_character_pepe/3_jump/J-39.png",
   ];
-  IMAGES_AIRBORNE = this.IMAGES_JUMPING.slice(3, 6);
 
   IMAGES_HURT = [
     "img/2_character_pepe/4_hurt/H-41.png",
@@ -53,9 +56,8 @@ class Character extends MovableObject {
     this.loadImages(this.IMAGES_JUMPING);
     this.loadImages(this.IMAGES_HURT);
     this.loadImages(this.IMAGES_DEAD);
-    this.applyGravity(() => {
-      this.img = this.imageCache[this.IMAGES_AIRBORNE[0]];
-    });
+    // Sobald Pepe abhebt, wechselt das Bild sofort zu einer Flugpose ohne Schatten.
+    this.applyGravity(() => this.animateJump());
 
     this.animate();
   }
@@ -88,47 +90,74 @@ class Character extends MovableObject {
     }, 1000 / 60);
 
     setInterval(() => {
+      // Erst der Tod, dann ein Treffer, dann die normale Bewegung.
+      const hurtFrame = Math.floor(
+        (Date.now() - this.lastHit) / animationInterval,
+      );
       if (this.isDead()) {
         this.playAnimation(this.IMAGES_DEAD);
-        return;
-      }
-
-      const hurtFrame = Math.floor((Date.now() - this.lastHit) / animationInterval);
-      if (hurtFrame < this.IMAGES_HURT.length) {
+      } else if (hurtFrame < this.IMAGES_HURT.length) {
         this.img = this.imageCache[this.IMAGES_HURT[hurtFrame]];
-        return;
-      }
-
-      if (this.isAboveGround()) {
-        const jumpProgress =
-          (this.jumpSpeed - this.speedY) / (2 * this.jumpSpeed);
-        const lastFrame = this.IMAGES_AIRBORNE.length - 1;
-        const frame = Math.max(
-          0,
-          Math.min(Math.round(jumpProgress * lastFrame), lastFrame),
-        );
-
-        this.img = this.imageCache[this.IMAGES_AIRBORNE[frame]];
-        return;
-      }
-
-      if (this.speedY > 0) {
-        return;
-      }
-
-      if (this.jumpState === "jumping") {
-        this.img = this.imageCache[this.IMAGES_JUMPING.at(-1)];
-        this.jumpState = "landing";
-        return;
-      }
-
-      this.jumpState = "idle";
-      if (this.world.keyboard.RIGHT || this.world.keyboard.LEFT) {
-        this.playAnimation(this.IMAGES_WALKING);
+      } else if (this.isAboveGround()) {
+        this.animateJump();
       } else {
-        this.img = this.imageCache[this.IMAGES_WALKING[0]];
+        this.animateOnGround();
       }
     }, animationInterval);
+  }
+
+  animateJump() {
+    // speedY ist beim Aufstieg positiv und beim Fallen negativ.
+    const halfJumpSpeed = this.jumpSpeed / 2;
+    if (this.speedY > halfJumpSpeed) {
+      this.img = this.imageCache[this.IMAGES_JUMPING[3]]; // J-34: Aufstieg
+    } else if (this.speedY <= -halfJumpSpeed) {
+      this.img = this.imageCache[this.IMAGES_JUMPING[5]]; // J-36: Abstieg
+    } else {
+      this.img = this.imageCache[this.IMAGES_JUMPING[4]]; // J-35: oben
+    }
+  }
+
+  animateOnGround() {
+    if (this.jumpState === "takeoff") {
+      // Spiele die restlichen Vorbereitungsbilder ab, bevor Pepe abhebt.
+      if (this.jumpFrame < 3) {
+        this.img = this.imageCache[this.IMAGES_JUMPING[this.jumpFrame]];
+        this.jumpFrame++;
+      } else {
+        this.jumpState = "jumping";
+        this.speedY = this.jumpSpeed;
+      }
+      return;
+    }
+
+    // Der Absprung ist bereit. Beim nächsten Physikschritt hebt Pepe ab.
+    if (this.speedY > 0) {
+      return;
+    }
+
+    // Pepe steht wieder am Boden. Jetzt beginnt die Landung.
+    if (this.jumpState === "jumping") {
+      this.jumpState = "landing";
+      this.jumpFrame = 6; // J-37: erstes Landebild
+    }
+
+    if (
+      this.jumpState === "landing" &&
+      this.jumpFrame < this.IMAGES_JUMPING.length
+    ) {
+      this.img = this.imageCache[this.IMAGES_JUMPING[this.jumpFrame]];
+      this.jumpFrame++;
+      return;
+    }
+
+    this.jumpState = "idle";
+    const { keyboard } = this.world;
+    if (keyboard.RIGHT || keyboard.LEFT) {
+      this.playAnimation(this.IMAGES_WALKING);
+    } else {
+      this.img = this.imageCache[this.IMAGES_WALKING[0]];
+    }
   }
 
   updateCamera() {
@@ -148,9 +177,10 @@ class Character extends MovableObject {
   }
 
   jump() {
-    this.jumpState = "jumping";
+    this.jumpState = "takeoff";
+    // J-31 wird sofort gezeigt. Beim nächsten Animationsschritt folgt J-32.
+    this.jumpFrame = 1;
     this.currentImage = 0;
-    this.speedY = this.jumpSpeed;
-    this.img = this.imageCache[this.IMAGES_JUMPING[2]];
+    this.img = this.imageCache[this.IMAGES_JUMPING[0]];
   }
 }
