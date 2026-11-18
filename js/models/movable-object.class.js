@@ -33,16 +33,6 @@ class MovableObject extends DrawableObject {
     return this.y < this.groundY;
   }
 
-  drawFrame(ctx) {
-    if (this instanceof Character || this instanceof Chicken) {
-      ctx.beginPath();
-      ctx.lineWidth = 5;
-      ctx.strokeStyle = "blue";
-      ctx.rect(this.x, this.y, this.width, this.height);
-      ctx.stroke();
-    }
-  }
-
   // Prüft, ob sich die beiden Rechtecke überlappen.
   isColliding(mo) {
     return (

@@ -5,9 +5,9 @@ class Character extends MovableObject {
   y = 50;
   speed = 8;
   jumpSpeed = 25;
-  // idle = bereit, takeoff = abdrücken, jumping = Sprung, landing = abfedern.
+  // idle = bereit, jumping = Sprung, landing = abfedern.
   jumpState = "idle";
-  // Merkt sich das nächste Bild für die Vorbereitung oder Landung.
+  // Merkt sich das nächste Bild für die Landung.
   jumpFrame = 0;
 
   IMAGES_WALKING = [
@@ -119,18 +119,6 @@ class Character extends MovableObject {
   }
 
   animateOnGround() {
-    if (this.jumpState === "takeoff") {
-      // Spiele die restlichen Vorbereitungsbilder ab, bevor Pepe abhebt.
-      if (this.jumpFrame < 3) {
-        this.img = this.imageCache[this.IMAGES_JUMPING[this.jumpFrame]];
-        this.jumpFrame++;
-      } else {
-        this.jumpState = "jumping";
-        this.speedY = this.jumpSpeed;
-      }
-      return;
-    }
-
     // Der Absprung ist bereit. Beim nächsten Physikschritt hebt Pepe ab.
     if (this.speedY > 0) {
       return;
@@ -177,10 +165,10 @@ class Character extends MovableObject {
   }
 
   jump() {
-    this.jumpState = "takeoff";
-    // J-31 wird sofort gezeigt. Beim nächsten Animationsschritt folgt J-32.
-    this.jumpFrame = 1;
+    this.jumpState = "jumping";
     this.currentImage = 0;
-    this.img = this.imageCache[this.IMAGES_JUMPING[0]];
+    // Der nächste Physikschritt bewegt Pepe direkt nach oben.
+    this.speedY = this.jumpSpeed;
+    this.animateJump();
   }
 }
