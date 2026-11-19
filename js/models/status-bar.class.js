@@ -28,18 +28,7 @@ class StatusBar extends DrawableObject {
   }
 
   resolveImageIndex() {
-    if (this.percentage == 100) {
-      return 5;
-    } else if (this.percentage > 80) {
-      return 4;
-    } else if (this.percentage > 60) {
-      return 3;
-    } else if (this.percentage > 40) {
-      return 2;
-    } else if (this.percentage > 20) {
-      return 1;
-    } else {
-      return 0;
-    }
+    // Rundet auf die nächste Bildstufe auf: Bei 75 % wird das 80-%-Bild angezeigt.
+    return Math.ceil(this.percentage / 20);
   }
 }
