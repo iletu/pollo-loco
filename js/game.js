@@ -12,6 +12,11 @@ function init() {
 window.addEventListener("keydown", (event) => {
   console.log(event.code);
 
+  // Jeder Tastendruck startet die Wartezeit für Idle und Sleep neu.
+  if (world) {
+    world.character.lastAction = Date.now();
+  }
+
   if (event.code === "ArrowRight") {
     keyboard.RIGHT = true;
   }

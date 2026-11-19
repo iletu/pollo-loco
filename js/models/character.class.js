@@ -5,10 +5,11 @@ class Character extends MovableObject {
   y = 50;
   speed = 8;
   jumpSpeed = 25;
-  // idle = bereit, jumping = Sprung, landing = abfedern.
   jumpState = "idle";
-  // Merkt sich das nächste Bild für die Landung.
   jumpFrame = 0;
+
+  lastAction = Date.now(); // Merkt sich die Zeit der letzten Aktion.
+  lastRestAnimation = 0; // Zeitpunkt des letzten Idle- oder Sleep-Bildwechsels.
 
   IMAGES_WALKING = [
     "img/2_character_pepe/2_walk/W-21.png",
@@ -48,7 +49,7 @@ class Character extends MovableObject {
     "img/2_character_pepe/5_dead/D-57.png",
   ];
 
-  IMAGES_IGLE = [
+  IMAGES_IDLE = [
     "img/2_character_pepe/1_idle/idle/I-1.png",
     "img/2_character_pepe/1_idle/idle/I-2.png",
     "img/2_character_pepe/1_idle/idle/I-3.png",
@@ -59,7 +60,18 @@ class Character extends MovableObject {
     "img/2_character_pepe/1_idle/idle/I-8.png",
     "img/2_character_pepe/1_idle/idle/I-9.png",
   ];
-
+  IMAGES_SLEEP = [
+    "img/2_character_pepe/1_idle/long_idle/I-11.png",
+    "img/2_character_pepe/1_idle/long_idle/I-12.png",
+    "img/2_character_pepe/1_idle/long_idle/I-13.png",
+    "img/2_character_pepe/1_idle/long_idle/I-14.png",
+    "img/2_character_pepe/1_idle/long_idle/I-15.png",
+    "img/2_character_pepe/1_idle/long_idle/I-16.png",
+    "img/2_character_pepe/1_idle/long_idle/I-17.png",
+    "img/2_character_pepe/1_idle/long_idle/I-18.png",
+    "img/2_character_pepe/1_idle/long_idle/I-19.png",
+    "img/2_character_pepe/1_idle/long_idle/I-20.png",
+  ];
   world;
 
   constructor() {
@@ -69,6 +81,8 @@ class Character extends MovableObject {
     this.loadImages(this.IMAGES_JUMPING);
     this.loadImages(this.IMAGES_HURT);
     this.loadImages(this.IMAGES_DEAD);
+    this.loadImages(this.IMAGES_IDLE);
+    this.loadImages(this.IMAGES_SLEEP);
     this.applyGravity();
 
     this.animate();
@@ -149,15 +163,33 @@ class Character extends MovableObject {
     ) {
       this.img = this.imageCache[this.IMAGES_JUMPING[this.jumpFrame]];
       this.jumpFrame++;
+      this.lastAction = Date.now(); // Die Ruhezeit beginnt nach der Landung.
       return;
     }
 
     this.jumpState = "idle";
     const keyboard = this.world.keyboard;
+
     if (keyboard.RIGHT || keyboard.LEFT) {
       this.playAnimation(this.IMAGES_WALKING);
+      this.lastAction = Date.now(); // Wartezeit beim Laufen zurücksetzen.
     } else {
-      this.img = this.imageCache[this.IMAGES_WALKING[0]];
+      let timePassed = Date.now() - this.lastAction;
+      let animationPassed = Date.now() - this.lastRestAnimation;
+
+      if (timePassed >= 15000) {
+        if (animationPassed >= 250) {
+          this.playAnimation(this.IMAGES_SLEEP);
+          this.lastRestAnimation = Date.now();
+        }
+      } else if (timePassed >= 5000) {
+        if (animationPassed >= 150) {
+          this.playAnimation(this.IMAGES_IDLE);
+          this.lastRestAnimation = Date.now();
+        }
+      } else {
+        this.img = this.imageCache[this.IMAGES_WALKING[0]];
+      }
     }
   }
 
