@@ -7,6 +7,8 @@ class World {
   keyboard;
   camera_x = 0;
   statusBar = new StatusBar();
+  throwableObjects = [];
+  lastThrow = 0;
 
   constructor(canvas, keyboard) {
     this.ctx = canvas.getContext("2d");
@@ -16,26 +18,41 @@ class World {
     this.setWorld();
     // this.character.animate();
     this.draw();
-    this.checkCollisions();
+    this.run();
   }
 
   setWorld() {
     this.character.world = this;
   }
 
-  checkCollisions() {
+  run() {
     setInterval(() => {
-      this.level.enemies.forEach((enemy) => {
-        if (this.character.isColliding(enemy)) {
-          this.character.hit();
-          this.statusBar.setPercentage(this.character.energy);
-          console.log(
-            "Collision with Character, energy ",
-            this.character.energy,
-          );
-        }
-      });
+      this.checkCollisions();
+      this.checkThrowObjects();
     }, 200);
+  }
+
+  checkThrowObjects() {
+    if (this.keyboard.D && Date.now() - this.lastThrow >= 200) {
+      this.throwBottle();
+    }
+  }
+
+  throwBottle() {
+    let bottle = new ThrowableObject(this.character.x, this.character.y);
+    this.throwableObjects.push(bottle);
+    this.lastThrow = Date.now();
+  }
+
+  checkCollisions() {
+    // check collision
+    this.level.enemies.forEach((enemy) => {
+      if (this.character.isColliding(enemy)) {
+        this.character.hit();
+        this.statusBar.setPercentage(this.character.energy);
+        console.log("Collision with Character, energy ", this.character.energy);
+      }
+    });
   }
 
   draw() {
@@ -47,6 +64,8 @@ class World {
     this.addToMap(this.character);
     this.addObjectsToMap(this.level.enemies);
     this.addObjectsToMap(this.level.clouds);
+
+    this.addObjectsToMap(this.throwableObjects);
 
     // Die Statusleiste bleibt beim Scrollen an derselben Bildschirmposition.
     this.ctx.translate(-this.camera_x, 0);

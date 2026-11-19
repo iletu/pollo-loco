@@ -10,18 +10,14 @@ class MovableObject extends DrawableObject {
 
   groundY = 155;
 
-  applyGravity(onTakeoff) {
+  applyGravity() {
     setInterval(() => {
-      const wasAboveGround = this.isAboveGround();
-      if (wasAboveGround || this.speedY > 0) {
+      if (this.isAboveGround() || this.speedY > 0) {
         this.y -= this.speedY;
         this.speedY -= this.acceleration;
 
-        if (!wasAboveGround && this.isAboveGround()) {
-          onTakeoff?.();
-        }
-
-        if (this.y >= this.groundY) {
+        // Flaschen dürfen weiterfallen. Die Spielfigur hält am Boden an.
+        if (this.y >= this.groundY && !this.isAboveGround()) {
           this.y = this.groundY;
           this.speedY = 0;
         }
@@ -30,7 +26,11 @@ class MovableObject extends DrawableObject {
   }
 
   isAboveGround() {
-    return this.y < this.groundY;
+    if (this instanceof ThrowableObject) {
+      return true;
+    } else {
+      return this.y < this.groundY;
+    }
   }
 
   // Prüft, ob sich die beiden Rechtecke überlappen.

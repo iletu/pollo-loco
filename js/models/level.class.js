@@ -9,9 +9,12 @@ class Level {
         this.enemies = enemies;
         this.clouds = clouds;
         this.backgroundObjects = backgroundObjects;
-        this.backgroundEndX = backgroundObjects.reduce(
-            (rightEdge, object) => Math.max(rightEdge, object.x + object.width),
-            0
-        );
+        this.backgroundEndX = 0;
+        for (const background of backgroundObjects) {
+            const rightEdge = background.x + background.width;
+            if (rightEdge > this.backgroundEndX) {
+                this.backgroundEndX = rightEdge;
+            }
+        }
     }
 }

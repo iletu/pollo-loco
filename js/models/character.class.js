@@ -48,16 +48,28 @@ class Character extends MovableObject {
     "img/2_character_pepe/5_dead/D-57.png",
   ];
 
+  IMAGES_IGLE = [
+    "img/2_character_pepe/1_idle/idle/I-1.png",
+    "img/2_character_pepe/1_idle/idle/I-2.png",
+    "img/2_character_pepe/1_idle/idle/I-3.png",
+    "img/2_character_pepe/1_idle/idle/I-4.png",
+    "img/2_character_pepe/1_idle/idle/I-5.png",
+    "img/2_character_pepe/1_idle/idle/I-6.png",
+    "img/2_character_pepe/1_idle/idle/I-7.png",
+    "img/2_character_pepe/1_idle/idle/I-8.png",
+    "img/2_character_pepe/1_idle/idle/I-9.png",
+  ];
+
   world;
 
   constructor() {
-    super().loadImage("img/2_character_pepe/2_walk/W-21.png");
+    super();
+    this.loadImage("img/2_character_pepe/2_walk/W-21.png");
     this.loadImages(this.IMAGES_WALKING);
     this.loadImages(this.IMAGES_JUMPING);
     this.loadImages(this.IMAGES_HURT);
     this.loadImages(this.IMAGES_DEAD);
-    // Sobald Pepe abhebt, wechselt das Bild sofort zu einer Flugpose ohne Schatten.
-    this.applyGravity(() => this.animateJump());
+    this.applyGravity();
 
     this.animate();
   }
@@ -65,7 +77,8 @@ class Character extends MovableObject {
   animate() {
     const animationInterval = 50;
     setInterval(() => {
-      const { keyboard, level } = this.world;
+      const keyboard = this.world.keyboard;
+      const level = this.world.level;
 
       if (keyboard.RIGHT && this.x < level.level_end_x) {
         this.x = Math.min(this.x + this.speed, level.level_end_x);
@@ -85,7 +98,7 @@ class Character extends MovableObject {
       ) {
         this.jump();
       }
-      // Pepe kann bis zur Mitte laufen und dann geht die Kamera mit
+      // Die Kamera folgt Pepe ab 25 % der Bildschirmbreite.
       this.updateCamera();
     }, 1000 / 60);
 
@@ -140,7 +153,7 @@ class Character extends MovableObject {
     }
 
     this.jumpState = "idle";
-    const { keyboard } = this.world;
+    const keyboard = this.world.keyboard;
     if (keyboard.RIGHT || keyboard.LEFT) {
       this.playAnimation(this.IMAGES_WALKING);
     } else {
@@ -149,19 +162,31 @@ class Character extends MovableObject {
   }
 
   updateCamera() {
-    const { canvas, level } = this.world;
-    const centerX = (canvas.width - this.width) / 2;
+    const canvas = this.world.canvas;
+    const level = this.world.level;
+    // Pepes Bildmitte bleibt beim Scrollen bei 25 % der Bildschirmbreite.
+    const followX = canvas.width * 0.25 - this.width / 2;
     const cameraEndX = Math.min(0, canvas.width - level.backgroundEndX);
-    const centeredEndX = Math.min(0, centerX - level.level_end_x);
     const panDistance = 600;
     const panStartX = level.level_end_x - panDistance;
-    const panProgress = Math.max(0, (this.x - panStartX) / panDistance);
-    const extraPan = Math.min(0, cameraEndX - centeredEndX) * panProgress;
+    let cameraX = followX - this.x;
 
-    this.world.camera_x = Math.max(
-      cameraEndX,
-      Math.min(0, centerX - this.x + extraPan),
-    );
+    // Auf den letzten 600 Pixeln schwenkt die Kamera bis zum Feldrand.
+    if (this.x > panStartX) {
+      const progress = (this.x - panStartX) / panDistance;
+      const missingDistance = followX - level.level_end_x - cameraEndX;
+      if (missingDistance > 0) {
+        cameraX = cameraX - missingDistance * progress;
+      }
+    }
+
+    if (cameraX > 0) {
+      cameraX = 0;
+    }
+    if (cameraX < cameraEndX) {
+      cameraX = cameraEndX;
+    }
+    this.world.camera_x = cameraX;
   }
 
   jump() {
