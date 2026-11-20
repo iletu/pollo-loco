@@ -7,7 +7,7 @@ class World {
   keyboard;
   camera_x = 0;
   statusBar = new StatusBar();
-  throwableObjects = [];
+  thrownChilis = [];
   lastThrow = 0;
 
   goldenEggs = [
@@ -26,7 +26,26 @@ class World {
     new GoldenEgg(1970, 270),
     new GoldenEgg(2200, 270),
   ];
-  totalGoldenEggs = this.goldenEggs.length;
+  // Jede Chili bekommt ihre Position im Level als x und y.
+  chilis = [
+    new Chili(220, 350),
+    new Chili(480, 350),
+    new Chili(625, 250),
+    new Chili(925, 350),
+    new Chili(1210, 250),
+    new Chili(1450, 350),
+    new Chili(1760, 350),
+    new Chili(2100, 350),
+  ];
+
+  eggBar = new CollectibleBar(
+    46, "Goldene Eier", "img/8_golden_egg/golden_egg_1.png", "#bd8100",
+    this.goldenEggs.length,
+  );
+  chiliBar = new CollectibleBar(
+    76, "Chilis", "img/chili/chili.png", "#ad2b20",
+    this.chilis.length,
+  );
 
   constructor(canvas, keyboard) {
     this.ctx = canvas.getContext("2d");
@@ -51,14 +70,27 @@ class World {
   }
 
   checkThrowObjects() {
-    if (this.keyboard.D && Date.now() - this.lastThrow >= 200) {
-      this.throwBottle();
+    if (this.keyboard.D) {
+      this.throwChili();
     }
   }
 
-  throwBottle() {
-    let bottle = new ThrowableObject(this.character.x, this.character.y);
-    this.throwableObjects.push(bottle);
+  throwChili() {
+    // Ohne Vorrat, im Tod oder innerhalb der Wartezeit wird kein Wurf gestartet.
+    if (this.chiliBar.amount === 0 || this.character.isDead() ||
+        Date.now() - this.lastThrow < 200) {
+      return;
+    }
+
+    const chili = new ThrownChili(
+      this.character.x + this.character.width / 2,
+      this.character.y + 100,
+      this.character.otherDirection,
+      this.canvas.height,
+    );
+    this.thrownChilis.push(chili);
+    // Ein erfolgreicher Wurf verbraucht genau eine Chili.
+    this.chiliBar.amount--;
     this.lastThrow = Date.now();
   }
 
@@ -74,6 +106,7 @@ class World {
   }
 
   collectGoldenEggs() {
+    // Bei filter() bleibt ein Ei nur mit true in der Liste.
     this.goldenEggs = this.goldenEggs.filter((egg) => {
       if (this.character.isColliding(egg)) {
         egg.stopAnimation();
@@ -81,39 +114,47 @@ class World {
       }
       return true;
     });
+    // Gesammelte Eier sind alle Eier minus die übrigen im Level.
+    this.eggBar.amount = this.eggBar.total - this.goldenEggs.length;
   }
 
-  drawEggCounter() {
-    const collectedEggs = this.totalGoldenEggs - this.goldenEggs.length;
-    const label = `Goldene Eier: ${collectedEggs} / ${this.totalGoldenEggs}`;
-    this.ctx.save();
-    this.ctx.font = "bold 18px sans-serif";
-    this.ctx.lineWidth = 4;
-    this.ctx.strokeStyle = "#302013";
-    this.ctx.fillStyle = "#ffe077";
-    this.ctx.strokeText(label, 15, 62);
-    this.ctx.fillText(label, 15, 62);
-    this.ctx.restore();
+  collectChilis() {
+    this.chilis = this.chilis.filter((chili) => {
+      if (this.character.isColliding(chili)) {
+        this.chiliBar.amount++;
+        // Die eingesammelte Chili verschwindet aus dem Level.
+        return false;
+      }
+      return true;
+    });
   }
 
   draw() {
-    this.collectGoldenEggs();
+    // Pro Bild prüfen, damit Pepe auch beim Springen einsammelt.
+    if (!this.character.isDead()) {
+      this.collectGoldenEggs();
+      this.collectChilis();
+    }
+    // Würfe unterhalb des Bildschirms aus der Liste entfernen.
+    this.thrownChilis = this.thrownChilis.filter((chili) => chili.y < this.canvas.height);
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     this.ctx.translate(this.camera_x, 0);
     this.addObjectsToMap(this.level.backgroundObjects);
     this.addObjectsToMap(this.goldenEggs);
+    this.addObjectsToMap(this.chilis);
 
     this.addToMap(this.character);
     this.addObjectsToMap(this.level.enemies);
     this.addObjectsToMap(this.level.clouds);
 
-    this.addObjectsToMap(this.throwableObjects);
+    this.addObjectsToMap(this.thrownChilis);
 
-    // Die Statusleiste bleibt beim Scrollen an derselben Bildschirmposition.
+    // Die Statusleisten bleiben beim Scrollen an derselben Bildschirmposition.
     this.ctx.translate(-this.camera_x, 0);
     this.addToMap(this.statusBar);
-    this.drawEggCounter();
+    this.addToMap(this.eggBar);
+    this.addToMap(this.chiliBar);
 
     // Draw() wird immer wieder aufgerufen
     let self = this;

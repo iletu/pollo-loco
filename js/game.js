@@ -39,7 +39,7 @@ window.addEventListener("keydown", (event) => {
 
   if (event.code === "KeyD") {
     if (!keyboard.D && world) {
-      world.throwBottle();
+      world.throwChili();
     }
     keyboard.D = true;
   }
