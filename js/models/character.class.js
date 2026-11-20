@@ -1,6 +1,7 @@
 class Character extends MovableObject {
   height = 280;
   width = 150;
+  offset = { top: 105, right: 44, bottom: 15, left: 22 };
   // y = 155;
   y = 50;
   speed = 8;
@@ -91,11 +92,15 @@ class Character extends MovableObject {
   animate() {
     const animationInterval = 50;
     setInterval(() => {
+      // Beim Schweben ist die Steuerung kurz pausiert.
+      if (this.world.isCelebrating()) {
+        return;
+      }
       const keyboard = this.world.keyboard;
-      const level = this.world.level;
+      const endX = this.world.getPlayerEndX();
 
-      if (keyboard.RIGHT && this.x < level.level_end_x) {
-        this.x = Math.min(this.x + this.speed, level.level_end_x);
+      if (keyboard.RIGHT && this.x < endX) {
+        this.x = Math.min(this.x + this.speed, endX);
         this.otherDirection = false;
       }
 
@@ -219,6 +224,21 @@ class Character extends MovableObject {
       cameraX = cameraEndX;
     }
     this.world.camera_x = cameraX;
+  }
+
+  drawFrame(ctx) {
+    super.drawFrame(ctx);
+    // Der rote Rahmen zeigt den Abstand zum blauen Bildrand.
+    ctx.save();
+    ctx.strokeStyle = "red";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(
+      this.x + this.offset.left,
+      this.y + this.offset.top,
+      this.width - this.offset.left - this.offset.right,
+      this.height - this.offset.top - this.offset.bottom,
+    );
+    ctx.restore();
   }
 
   jump() {

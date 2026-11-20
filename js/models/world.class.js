@@ -7,8 +7,16 @@ class World {
   keyboard;
   camera_x = 0;
   statusBar = new StatusBar();
+  endboss = this.level.enemies.find((enemy) => enemy instanceof Endboss);
+  bossBar = new StatusBar([0, 20, 40, 60, 80, 100].map((percentage) =>
+    `img/7_statusbars/2_statusbar_endboss/orange/orange${percentage}.png`
+  ));
   thrownChilis = [];
   lastThrow = 0;
+  bossEgg = null;
+  bossEggCollectedAt = null;
+  celebrationDuration = 1450;
+  bossEggX;
 
   goldenEggs = [
     new GoldenEgg(250, 270),
@@ -51,6 +59,9 @@ class World {
     this.ctx = canvas.getContext("2d");
     this.canvas = canvas;
     this.keyboard = keyboard;
+    this.bossBar.x = this.canvas.width - this.bossBar.width - 10;
+    // Der Balken sitzt im Boss-PNG höher, deshalb zeichnen wir es 6 Pixel tiefer.
+    this.bossBar.y = this.statusBar.y + 6;
 
     this.setWorld();
     // this.character.animate();
@@ -63,8 +74,12 @@ class World {
   }
 
   run() {
+    // Kürzere Abstände helfen, kurze Berührungen zu erkennen.
     setInterval(() => {
       this.checkCollisions();
+    }, 50);
+
+    setInterval(() => {
       this.checkThrowObjects();
     }, 200);
   }
@@ -77,7 +92,7 @@ class World {
 
   throwChili() {
     // Ohne Vorrat, im Tod oder innerhalb der Wartezeit wird kein Wurf gestartet.
-    if (this.chiliBar.amount === 0 || this.character.isDead() ||
+    if (this.chiliBar.amount === 0 || this.character.isDead() || this.isCelebrating() ||
         Date.now() - this.lastThrow < 200) {
       return;
     }
@@ -95,14 +110,66 @@ class World {
   }
 
   checkCollisions() {
+    if (this.isCelebrating()) {
+      return;
+    }
     // check collision
     this.level.enemies.forEach((enemy) => {
-      if (this.character.isColliding(enemy) && !this.character.isHurt()) {
+      if (!enemy.isDead() && this.character.isColliding(enemy) && !this.character.isHurt()) {
         this.character.hit();
         this.statusBar.setPercentage(this.character.energy);
         console.log("Collision with Character, energy ", this.character.energy);
       }
     });
+  }
+
+  checkChiliHits() {
+    this.thrownChilis = this.thrownChilis.filter((chili) => {
+      if (chili.y >= this.canvas.height) {
+        chili.stop();
+        return false;
+      }
+
+      // Pro Chili zählt nur der erste Treffer auf einen lebenden Gegner.
+      const enemy = this.level.enemies.find((enemy) =>
+        !enemy.isDead() && chili.isColliding(enemy)
+      );
+      if (enemy) {
+        enemy.hit();
+        if (enemy instanceof Endboss && enemy.isDead()) {
+          this.spawnBossEgg(enemy);
+        }
+        chili.stop();
+        return false;
+      }
+      return true;
+    });
+  }
+
+  spawnBossEgg(boss) {
+    const eggWidth = 100;
+    const eggHeight = 120;
+    // Das Ei erscheint mittig über der Stelle des Bosses.
+    this.bossEggX = boss.x + (boss.width - eggWidth) / 2;
+    // Etwas höher zeichnen, damit das Ei auf Höhe von Pepes Füßen sitzt.
+    const eggY = boss.y + boss.height - eggHeight - 20;
+    this.bossEgg = new GoldenEgg(this.bossEggX, eggY);
+    this.bossEgg.width = eggWidth;
+    this.bossEgg.height = eggHeight;
+  }
+
+  getPlayerEndX() {
+    // Erst nach dem Sieg darf Pepe zum großen Ei weiterlaufen.
+    return this.bossEggX ?? this.level.level_end_x;
+  }
+
+  collectBossEgg() {
+    if (this.bossEgg && this.character.isColliding(this.bossEgg)) {
+      this.bossEgg.stopAnimation();
+      this.bossEgg = null;
+      this.bossEggCollectedAt = Date.now();
+      this.character.lastAction = this.bossEggCollectedAt;
+    }
   }
 
   collectGoldenEggs() {
@@ -134,18 +201,28 @@ class World {
     if (!this.character.isDead()) {
       this.collectGoldenEggs();
       this.collectChilis();
+      this.collectBossEgg();
     }
-    // Würfe unterhalb des Bildschirms aus der Liste entfernen.
-    this.thrownChilis = this.thrownChilis.filter((chili) => chili.y < this.canvas.height);
+    // Fliegende Chilis bei jedem Bild auf Treffer prüfen.
+    this.checkChiliHits();
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     this.ctx.translate(this.camera_x, 0);
     this.addObjectsToMap(this.level.backgroundObjects);
     this.addObjectsToMap(this.goldenEggs);
     this.addObjectsToMap(this.chilis);
+    if (this.bossEgg) {
+      this.addToMap(this.bossEgg);
+    }
 
-    this.addToMap(this.character);
-    this.addObjectsToMap(this.level.enemies);
+    this.drawCharacter();
+    const visibleEnemies = this.level.enemies.filter((enemy) => {
+      if (enemy instanceof Chicken) {
+        return enemy.isVisible();
+      }
+      return !enemy.isDead();
+    });
+    this.addObjectsToMap(visibleEnemies);
     this.addObjectsToMap(this.level.clouds);
 
     this.addObjectsToMap(this.thrownChilis);
@@ -155,6 +232,7 @@ class World {
     this.addToMap(this.statusBar);
     this.addToMap(this.eggBar);
     this.addToMap(this.chiliBar);
+    this.drawBossBar();
 
     // Draw() wird immer wieder aufgerufen
     let self = this;
@@ -163,6 +241,43 @@ class World {
     });
 
     // this.ctx.drawImage(this.enemies.img, this.enemies.x, this.enemies.y, this.enemies.width, this.enemies.height);
+  }
+
+  drawBossBar() {
+    // Die Leiste ist sichtbar, sobald der Boss ins Bild kommt.
+    if (this.endboss && this.endboss.x + this.camera_x < this.canvas.width) {
+      this.bossBar.setPercentage(this.endboss.energy);
+      this.addToMap(this.bossBar);
+    }
+  }
+
+  drawCharacter() {
+    if (!this.isCelebrating()) {
+      this.addToMap(this.character);
+      return;
+    }
+
+    const elapsed = Date.now() - this.bossEggCollectedAt;
+    // Erst anheben, kurz schweben und dann wieder absenken.
+    const rise = Math.min(elapsed / 350, 1);
+    const descent = Math.min((this.celebrationDuration - elapsed) / 400, 1);
+    const lift = 78 * Math.min(rise, descent);
+    const pepe = this.character;
+    const pose = pepe.imageCache[pepe.IMAGES_JUMPING[5]];
+
+    this.ctx.save();
+    // Die Aura erscheint erst, wenn Pepe oben schwebt.
+    if (elapsed >= 350) {
+      this.ctx.shadowColor = "#ffd700";
+      this.ctx.shadowBlur = 30 * descent;
+    }
+    this.ctx.drawImage(pose, pepe.x, pepe.y - lift, pepe.width, pepe.height);
+    this.ctx.restore();
+  }
+
+  isCelebrating() {
+    return this.bossEggCollectedAt !== null &&
+      Date.now() - this.bossEggCollectedAt < this.celebrationDuration;
   }
 
   addObjectsToMap(objects) {

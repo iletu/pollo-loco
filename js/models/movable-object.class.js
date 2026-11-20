@@ -39,8 +39,8 @@ class MovableObject extends DrawableObject {
     );
   }
 
-  hit() {
-    this.energy -= 5;
+  hit(damage = 5) {
+    this.energy -= damage;
     this.lastHit = Date.now();
     if (this.energy < 0) {
       this.energy = 0;
@@ -64,7 +64,7 @@ class MovableObject extends DrawableObject {
   }
 
   moveLeft() {
-    setInterval(() => {
+    return setInterval(() => {
       this.x -= this.speed;
     }, 1000 / 60);
   }

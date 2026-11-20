@@ -22,10 +22,10 @@ class ThrownChili extends Chili {
     this.speedY = 15;
     // Beim Wurf nach links wird x kleiner.
     const step = otherDirection ? -13 : 13;
-    const gravityInterval = this.applyGravity();
+    this.gravityInterval = this.applyGravity();
     let movementSteps = 0;
 
-    const movementInterval = setInterval(() => {
+    this.movementInterval = setInterval(() => {
       this.x += step;
       movementSteps++;
       // Nach vier Bewegungsschritten kommt das nächste Drehbild.
@@ -35,10 +35,14 @@ class ThrownChili extends Chili {
       }
       // Unterhalb des Canvas endet der Wurf.
       if (this.y >= canvasHeight) {
-        clearInterval(gravityInterval);
-        clearInterval(movementInterval);
+        this.stop();
       }
     }, 25);
+  }
+
+  stop() {
+    clearInterval(this.gravityInterval);
+    clearInterval(this.movementInterval);
   }
 
   isAboveGround() {
