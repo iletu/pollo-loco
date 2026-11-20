@@ -4,7 +4,7 @@ class Chili extends MovableObject {
 
   constructor(x, y) {
     super();
-    this.loadImage("img/chili/chili.png");
+    this.loadImage("img/6_chili/chili.png");
     this.x = x;
     this.y = y;
   }

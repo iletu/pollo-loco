@@ -1,36 +1,28 @@
-class CollectibleBar extends DrawableObject {
-  constructor(y, label, icon, color, total) {
+class CollectibleBar extends StatusBar {
+  constructor(y, icon, total) {
     super();
-    this.x = 15;
     this.y = y;
-    this.width = 175;
-    this.height = 25;
-    this.label = label;
-    this.color = color;
     // total ist die Anzahl im Level, amount der aktuelle Zählerstand.
     this.total = total;
     this.amount = 0;
-    this.loadImage(icon);
+    this.loadImages([icon]);
+    this.icon = this.imageCache[icon];
   }
 
   draw(ctx) {
+    // Wie bei der Energie wählen wir eines der sechs fertigen Balkenbilder.
+    this.setPercentage(this.amount / this.total * 100);
+    const barX = this.x + 24;
+    const barY = this.y + 8;
+    // Das Herz liegt links im PNG. Wir zeichnen nur den Balken daneben.
+    ctx.drawImage(this.img, 110, 76, 485, 60, barX, barY, this.width - 24, 18);
+
+    ctx.drawImage(this.icon, this.x + 1, this.y, 32, 32);
     ctx.save();
-    ctx.fillStyle = "#39251e";
-    ctx.fillRect(this.x, this.y, this.width, this.height);
-
-    // Beispiel: 4 von 8 Chilis füllen die Leiste zur Hälfte.
-    ctx.fillStyle = this.color;
-    const fillWidth = (this.width - 4) * this.amount / this.total;
-    ctx.fillRect(this.x + 2, this.y + 2, fillWidth, this.height - 4);
-
-    ctx.drawImage(this.img, this.x + 5, this.y + 2, 19, 21);
-    ctx.font = "bold 14px sans-serif";
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = "#39251e";
-    ctx.fillStyle = "#fff";
-    const text = `${this.label}: ${this.amount} / ${this.total}`;
-    ctx.strokeText(text, this.x + 29, this.y + 17);
-    ctx.fillText(text, this.x + 29, this.y + 17);
+    ctx.font = "bold 11px sans-serif";
+    ctx.fillStyle = "#302013";
+    ctx.fillText(`${this.amount} / ${this.total}`, barX + 11, barY + 13);
     ctx.restore();
   }
+
 }

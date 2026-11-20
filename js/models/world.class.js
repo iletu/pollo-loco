@@ -39,11 +39,11 @@ class World {
   ];
 
   eggBar = new CollectibleBar(
-    46, "Goldene Eier", "img/8_golden_egg/golden_egg_1.png", "#bd8100",
+    44, "img/8_golden_egg/golden_egg_1.png",
     this.goldenEggs.length,
   );
   chiliBar = new CollectibleBar(
-    76, "Chilis", "img/chili/chili.png", "#ad2b20",
+    74, "img/6_chili/chili.png",
     this.chilis.length,
   );
 

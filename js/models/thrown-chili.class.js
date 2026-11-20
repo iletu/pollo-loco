@@ -3,14 +3,14 @@ class ThrownChili extends Chili {
   height = 58;
 
   IMAGES_ROTATION = [
-    "img/chili/rotation/chili-0.png",
-    "img/chili/rotation/chili-1.png",
-    "img/chili/rotation/chili-2.png",
-    "img/chili/rotation/chili-3.png",
-    "img/chili/rotation/chili-4.png",
-    "img/chili/rotation/chili-5.png",
-    "img/chili/rotation/chili-6.png",
-    "img/chili/rotation/chili-7.png",
+    "img/6_chili/rotation/chili-0.png",
+    "img/6_chili/rotation/chili-1.png",
+    "img/6_chili/rotation/chili-2.png",
+    "img/6_chili/rotation/chili-3.png",
+    "img/6_chili/rotation/chili-4.png",
+    "img/6_chili/rotation/chili-5.png",
+    "img/6_chili/rotation/chili-6.png",
+    "img/6_chili/rotation/chili-7.png",
   ];
 
   constructor(x, y, otherDirection, canvasHeight) {
