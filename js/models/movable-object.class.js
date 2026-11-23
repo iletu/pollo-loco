@@ -42,12 +42,11 @@ class MovableObject extends DrawableObject {
 
   hit(damage = 5) {
     this.energy -= damage;
-    this.lastHit = Date.now();
     if (this.energy < 0) {
       this.energy = 0;
-    } else {
-      this.lastHit = new Date().getTime();
     }
+    // Die Trefferpause beginnt mit diesem Treffer.
+    this.lastHit = Date.now();
   }
 
   isHurt() {
@@ -56,10 +55,6 @@ class MovableObject extends DrawableObject {
 
   isDead() {
     return this.energy == 0;
-  }
-
-  moveRight() {
-    console.log("Moving right");
   }
 
   moveLeft() {

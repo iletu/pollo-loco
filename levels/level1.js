@@ -1,7 +1,9 @@
 const path = 'img/5_background/layers';
 const backgroundObjects = [];
+const levelEndX = 5080;
 
-for (let i = -2; i <= 3; i++) {
+// Vier weitere Hintergrundbilder verlängern den Weg.
+for (let i = -2; i <= 7; i++) {
     const x = i * 720;
     const imageNumber = i % 2 === 0 ? 1 : 2;
 
@@ -17,12 +19,13 @@ const level1 = new Level([
     new Chicken(),
     new Chicken(),
     new Chicken(),
-    new Endboss()
+    new Endboss(levelEndX + 350)
 ],
 
     [
         new Cloud()
     ],
 
-    backgroundObjects
+    backgroundObjects,
+    levelEndX
 );

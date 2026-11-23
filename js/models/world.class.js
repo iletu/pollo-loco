@@ -14,7 +14,20 @@ class World {
   bossEgg = null;
   bossEggCollectedAt = null;
   celebrationDuration = 1450;
+  defeatFlashDuration = 360;
   bossEggX;
+  eggSound = new Audio("audio/sounds/collectibles/collectSound.wav");
+  bossEggSound = new Audio("audio/sounds/collectibles/bossEggAppear.wav");
+  victorySound = new Audio("audio/sounds/game/victory.wav");
+  chiliSound = new Audio("audio/sounds/collectibles/bottleCollectSound.wav");
+  chiliThrowSound = new Audio("audio/sounds/throwable/chiliThrow.wav");
+  bossApproachSound = new Audio("audio/sounds/endboss/endbossApproach-game.wav");
+  bossHitSound = new Audio("audio/sounds/chicken/chickenDead2.mp3");
+  chickenHitSound = new Audio("audio/sounds/chicken/chickenDead.mp3");
+  chickenCluckSound = new Audio("audio/sounds/chicken/chickenCluck.m4a");
+  lastChickenCluck = 0;
+  bossApproachPlayed = false;
+  nextEggSoundAt = 0;
 
   goldenEggs = [
     new GoldenEgg(250, 270),
@@ -22,15 +35,21 @@ class World {
     new GoldenEgg(320, 270),
     new GoldenEgg(700, 205),
     new GoldenEgg(850, 270),
-    new GoldenEgg(1000, 245),
-    new GoldenEgg(1035, 175),
-    new GoldenEgg(1070, 245),
-    new GoldenEgg(1300, 190),
-    new GoldenEgg(1600, 250),
-    new GoldenEgg(1900, 225),
-    new GoldenEgg(1935, 165),
-    new GoldenEgg(1970, 225),
-    new GoldenEgg(2200, 270),
+    new GoldenEgg(1580, 245),
+    new GoldenEgg(1615, 175),
+    new GoldenEgg(1650, 245),
+    new GoldenEgg(2050, 270),
+    new GoldenEgg(2430, 190),
+    new GoldenEgg(2670, 245),
+    new GoldenEgg(2740, 195),
+    new GoldenEgg(3160, 250),
+    new GoldenEgg(3450, 270),
+    new GoldenEgg(3890, 210),
+    new GoldenEgg(4200, 225),
+    new GoldenEgg(4235, 165),
+    new GoldenEgg(4270, 225),
+    new GoldenEgg(4620, 245),
+    new GoldenEgg(5080, 270),
   ];
   // Jede Chili bekommt ihre Position im Level als x und y.
   chilis = [
@@ -38,10 +57,14 @@ class World {
     new Chili(480, 265),
     new Chili(625, 200),
     new Chili(925, 335),
-    new Chili(1210, 220),
-    new Chili(1450, 335),
-    new Chili(1760, 190),
-    new Chili(2100, 335),
+    new Chili(1350, 245),
+    new Chili(1930, 220),
+    new Chili(2290, 335),
+    new Chili(2790, 335),
+    new Chili(3230, 265),
+    new Chili(3660, 190),
+    new Chili(4400, 220),
+    new Chili(4780, 335),
   ];
 
   eggCounter = new CollectibleCounter(
@@ -57,13 +80,21 @@ class World {
     this.ctx = canvas.getContext("2d");
     this.canvas = canvas;
     this.keyboard = keyboard;
+    this.eggSound.volume = 0.35;
+    this.bossEggSound.volume = 0.6;
+    this.victorySound.volume = 0.65;
+    this.chiliSound.volume = 0.35;
+    this.chiliThrowSound.volume = 0.45;
+    this.bossApproachSound.volume = 0.55;
+    this.bossHitSound.volume = 0.65;
+    this.chickenHitSound.volume = 0.55;
+    this.chickenCluckSound.volume = 0.20;
     this.bossBar.x = this.canvas.width - this.bossBar.width - 10;
     // Beide Zähler folgen direkt auf Pepes Herzleiste.
     this.eggCounter.x = this.statusBar.x + this.statusBar.width + 12;
     this.chiliCounter.x = this.eggCounter.x + this.eggCounter.width + 11;
 
     this.setWorld();
-    // this.character.animate();
     this.draw();
     this.run();
   }
@@ -80,7 +111,25 @@ class World {
 
     setInterval(() => {
       this.checkThrowObjects();
+      this.checkChickenSounds();
     }, 200);
+  }
+
+  checkChickenSounds() {
+    // Die Aufnahme dauert gut zwei Sekunden und soll ganz ausspielen.
+    if (this.character.isDead() || Date.now() - this.lastChickenCluck < 2400) {
+      return;
+    }
+
+    // Nur lebende Hühner in Pepes Nähe gackern hörbar.
+    const nearbyChicken = this.level.enemies.some((enemy) =>
+      enemy instanceof Chicken && !enemy.isDead() &&
+      Math.abs(enemy.x - this.character.x) < 240
+    );
+    if (nearbyChicken) {
+      this.lastChickenCluck = Date.now();
+      this.character.playSound(this.chickenCluckSound);
+    }
   }
 
   checkThrowObjects() {
@@ -106,15 +155,17 @@ class World {
     // Ein erfolgreicher Wurf verbraucht genau eine Chili.
     this.chiliCounter.amount--;
     this.lastThrow = Date.now();
+    this.character.playSound(this.chiliThrowSound);
   }
 
   checkCollisions() {
-    if (this.isCelebrating()) {
+    if (this.character.isDead() || this.isCelebrating()) {
       return;
     }
-    // check collision
+    // Für Gegnerkontakt zählt Pepes roter Rahmen.
+    const hitbox = this.character.getHitbox(this.character.otherDirection);
     this.level.enemies.forEach((enemy) => {
-      if (!enemy.isDead() && this.character.isColliding(enemy) && !this.character.isHurt()) {
+      if (!enemy.isDead() && enemy.isColliding(hitbox) && !this.character.isHurt()) {
         this.character.hit();
         this.statusBar.setPercentage(this.character.energy);
         console.log("Collision with Character, energy ", this.character.energy);
@@ -135,8 +186,13 @@ class World {
       );
       if (enemy) {
         enemy.hit();
-        if (enemy instanceof Endboss && enemy.isDead()) {
-          this.spawnBossEgg(enemy);
+        if (enemy instanceof Endboss) {
+          this.character.playSound(this.bossHitSound);
+          if (enemy.isDead()) {
+            this.spawnBossEgg(enemy);
+          }
+        } else if (enemy instanceof Chicken) {
+          this.character.playSound(this.chickenHitSound);
         }
         chili.stop();
         return false;
@@ -155,6 +211,7 @@ class World {
     this.bossEgg = new GoldenEgg(this.bossEggX, eggY);
     this.bossEgg.width = eggWidth;
     this.bossEgg.height = eggHeight;
+    this.character.playSound(this.bossEggSound);
   }
 
   getPlayerEndX() {
@@ -168,6 +225,8 @@ class World {
       this.bossEgg = null;
       this.bossEggCollectedAt = Date.now();
       this.character.lastAction = this.bossEggCollectedAt;
+      this.bossEggSound.pause();
+      this.character.playSound(this.victorySound);
     }
   }
 
@@ -176,6 +235,7 @@ class World {
     this.goldenEggs = this.goldenEggs.filter((egg) => {
       if (this.character.canCollect(egg)) {
         egg.stopAnimation();
+        this.playEggSound();
         return false;
       }
       return true;
@@ -184,10 +244,23 @@ class World {
     this.eggCounter.amount = this.eggCounter.total - this.goldenEggs.length;
   }
 
+  playEggSound() {
+    // Bei mehreren Eiern liegen die Töne kurz auseinander.
+    const now = Date.now();
+    const delay = Math.max(0, this.nextEggSoundAt - now);
+    this.nextEggSoundAt = now + delay + 120;
+    if (delay === 0) {
+      this.character.playSound(this.eggSound);
+    } else {
+      setTimeout(() => this.character.playSound(this.eggSound), delay);
+    }
+  }
+
   collectChilis() {
     this.chilis = this.chilis.filter((chili) => {
       if (this.character.canCollect(chili)) {
         this.chiliCounter.amount++;
+        this.character.playSound(this.chiliSound);
         // Die eingesammelte Chili verschwindet aus dem Level.
         return false;
       }
@@ -232,25 +305,37 @@ class World {
     this.addToMap(this.eggCounter);
     this.addToMap(this.chiliCounter);
     this.drawBossBar();
+    if (this.character.isDead() &&
+        this.getRetreatX() + this.camera_x + this.character.width <= 0) {
+      this.drawLossMessage();
+    }
 
     // Draw() wird immer wieder aufgerufen
     let self = this;
     requestAnimationFrame(function () {
       self.draw();
     });
-
-    // this.ctx.drawImage(this.enemies.img, this.enemies.x, this.enemies.y, this.enemies.width, this.enemies.height);
   }
 
   drawBossBar() {
     // Die Leiste ist sichtbar, sobald der Boss ins Bild kommt.
     if (this.endboss && this.endboss.x + this.camera_x < this.canvas.width) {
+      // Der Begrüßungston erklingt nur beim ersten Auftauchen.
+      if (!this.bossApproachPlayed && !this.endboss.isDead()) {
+        this.bossApproachPlayed = true;
+        this.character.playSound(this.bossApproachSound);
+      }
       this.bossBar.setPercentage(this.endboss.energy);
       this.addToMap(this.bossBar);
     }
   }
 
   drawCharacter() {
+    if (this.character.isDead()) {
+      this.drawDefeatedCharacter();
+      return;
+    }
+
     if (!this.isCelebrating()) {
       this.addToMap(this.character);
       return;
@@ -271,6 +356,80 @@ class World {
       this.ctx.shadowBlur = 30 * descent;
     }
     this.ctx.drawImage(pose, pepe.x, pepe.y - lift, pepe.width, pepe.height);
+    this.ctx.restore();
+  }
+
+  drawDefeatedCharacter() {
+    const pepe = this.character;
+    const elapsed = Date.now() - pepe.lastHit;
+    if (elapsed >= this.defeatFlashDuration) {
+      this.drawRetreat(elapsed - this.defeatFlashDuration);
+      return;
+    }
+
+    // Jedes Trefferbild ist kurz sichtbar und wird dann ausgeblendet.
+    const frameDuration = this.defeatFlashDuration / pepe.IMAGES_HURT.length;
+    if (elapsed % frameDuration < frameDuration / 2) {
+      const frame = Math.floor(elapsed / frameDuration);
+      const image = pepe.imageCache[pepe.IMAGES_HURT[frame]];
+      if (pepe.otherDirection) {
+        this.flipImage(pepe);
+      }
+      this.ctx.drawImage(image, pepe.x, pepe.y, pepe.width, pepe.height);
+      if (pepe.otherDirection) {
+        this.flipImageBack(pepe);
+      }
+    }
+  }
+
+  getRetreatX() {
+    const runningTime = Math.max(0, Date.now() - this.character.lastHit - this.defeatFlashDuration);
+    return this.character.x - runningTime * 0.48;
+  }
+
+  drawRetreat(runningTime) {
+    const pepe = this.character;
+    const x = this.getRetreatX();
+    if (x + this.camera_x + pepe.width <= 0) {
+      pepe.setLoopSound(null);
+      return;
+    }
+
+    pepe.setLoopSound(pepe.sounds.running);
+    const frame = Math.floor(runningTime / 65) % pepe.IMAGES_WALKING.length;
+    const image = pepe.imageCache[pepe.IMAGES_WALKING[frame]];
+    // Für die Flucht schaut Pepe nach links.
+    this.ctx.save();
+    this.ctx.translate(x + pepe.width, 0);
+    this.ctx.scale(-1, 1);
+    this.ctx.drawImage(image, 0, pepe.y, pepe.width, pepe.height);
+    this.ctx.restore();
+  }
+
+  drawLossMessage() {
+    this.ctx.save();
+    const centerX = this.canvas.width / 2;
+    const centerY = this.canvas.height / 2;
+    const label = "Try Again!";
+    this.ctx.font = "bold 66px sans-serif";
+    this.ctx.textAlign = "center";
+    this.ctx.textBaseline = "middle";
+
+    // Das Schild bleibt niedriger als die Schrift.
+    const panelWidth = this.ctx.measureText(label).width + 36;
+    this.ctx.beginPath();
+    this.ctx.roundRect(centerX - panelWidth / 2, centerY - 24, panelWidth, 48, 14);
+    this.ctx.fillStyle = this.statusBar.BACKGROUND_COLOR;
+    this.ctx.fill();
+    this.ctx.lineWidth = 3;
+    this.ctx.strokeStyle = this.statusBar.BORDER_COLOR;
+    this.ctx.stroke();
+
+    this.ctx.lineWidth = 8;
+    this.ctx.strokeStyle = this.statusBar.BACKGROUND_COLOR;
+    this.ctx.fillStyle = "#ffd573";
+    this.ctx.strokeText(label, centerX, centerY);
+    this.ctx.fillText(label, centerX, centerY);
     this.ctx.restore();
   }
 

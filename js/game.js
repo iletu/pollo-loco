@@ -1,6 +1,18 @@
 let canvas;
 let world;
 let keyboard = new Keyboard();
+const backgroundMusic = new Audio("audio/bg-music.mp3");
+backgroundMusic.volume = 0.05;
+backgroundMusic.loop = true;
+
+function startBackgroundMusic() {
+  // Der Browser erlaubt Musik erst nach einer Eingabe.
+  if (backgroundMusic.paused) {
+    backgroundMusic.play().catch(() => {});
+  }
+}
+
+window.addEventListener("pointerdown", startBackgroundMusic);
 
 function init() {
   canvas = document.getElementById("canvas");
@@ -10,6 +22,7 @@ function init() {
 }
 
 window.addEventListener("keydown", (event) => {
+  startBackgroundMusic();
   console.log(event.code);
 
   // Jeder Tastendruck startet die Wartezeit für Idle und Sleep neu.

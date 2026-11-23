@@ -41,16 +41,6 @@ class Character extends MovableObject {
     "img/2_character_pepe/4_hurt/H-43.png",
   ];
 
-  IMAGES_DEAD = [
-    "img/2_character_pepe/5_dead/D-51.png",
-    "img/2_character_pepe/5_dead/D-52.png",
-    "img/2_character_pepe/5_dead/D-53.png",
-    "img/2_character_pepe/5_dead/D-54.png",
-    "img/2_character_pepe/5_dead/D-55.png",
-    "img/2_character_pepe/5_dead/D-56.png",
-    "img/2_character_pepe/5_dead/D-57.png",
-  ];
-
   IMAGES_IDLE = [
     "img/2_character_pepe/1_idle/idle/I-1.png",
     "img/2_character_pepe/1_idle/idle/I-2.png",
@@ -75,14 +65,26 @@ class Character extends MovableObject {
     "img/2_character_pepe/1_idle/long_idle/I-20.png",
   ];
   world;
+  sounds = {
+    running: new Audio("audio/sounds/character/characterRun.mp3"),
+    jumping: new Audio("audio/sounds/character/characterJump.wav"),
+    hurt: new Audio("audio/sounds/character/characterDamage.mp3"),
+    snoring: new Audio("audio/sounds/character/characterSnoring.mp3"),
+  };
+  activeLoop = null;
 
   constructor() {
     super();
+    this.sounds.running.loop = true;
+    this.sounds.running.volume = 0.09;
+    this.sounds.jumping.volume = 0.13;
+    this.sounds.hurt.volume = 0.10;
+    this.sounds.snoring.loop = true;
+    this.sounds.snoring.volume = 0.10;
     this.loadImage("img/2_character_pepe/2_walk/W-21.png");
     this.loadImages(this.IMAGES_WALKING);
     this.loadImages(this.IMAGES_JUMPING);
     this.loadImages(this.IMAGES_HURT);
-    this.loadImages(this.IMAGES_DEAD);
     this.loadImages(this.IMAGES_IDLE);
     this.loadImages(this.IMAGES_SLEEP);
     this.applyGravity();
@@ -94,7 +96,7 @@ class Character extends MovableObject {
     const animationInterval = 50;
     setInterval(() => {
       // Beim Schweben ist die Steuerung kurz pausiert.
-      if (this.world.isCelebrating()) {
+      if (this.isDead() || this.world.isCelebrating()) {
         return;
       }
       const keyboard = this.world.keyboard;
@@ -118,20 +120,26 @@ class Character extends MovableObject {
       ) {
         this.jump();
       }
-      // Die Kamera folgt Pepe ab 25 % der Bildschirmbreite.
       this.updateCamera();
     }, 1000 / 60);
 
     setInterval(() => {
-      // Erst der Tod, dann ein Treffer, dann die normale Bewegung.
+      if (this.isDead()) {
+        return;
+      }
+      if (this.world.isCelebrating()) {
+        this.setLoopSound(null);
+        return;
+      }
+
+      // Trefferbilder haben Vorrang vor der normalen Bewegung.
       const hurtFrame = Math.floor(
         (Date.now() - this.lastHit) / animationInterval,
       );
-      if (this.isDead()) {
-        this.playAnimation(this.IMAGES_DEAD);
-      } else if (hurtFrame < this.IMAGES_HURT.length) {
+      if (hurtFrame < this.IMAGES_HURT.length) {
         this.img = this.imageCache[this.IMAGES_HURT[hurtFrame]];
       } else if (this.isAboveGround()) {
+        this.setLoopSound(null);
         this.animateJump();
       } else {
         this.animateOnGround();
@@ -177,6 +185,7 @@ class Character extends MovableObject {
     const keyboard = this.world.keyboard;
 
     if (keyboard.RIGHT || keyboard.LEFT) {
+      this.setLoopSound(this.sounds.running);
       this.playAnimation(this.IMAGES_WALKING);
       this.lastAction = Date.now(); // Wartezeit beim Laufen zurücksetzen.
     } else {
@@ -184,17 +193,21 @@ class Character extends MovableObject {
       let animationPassed = Date.now() - this.lastRestAnimation;
 
       if (timePassed >= 15000) {
+        this.setLoopSound(this.sounds.snoring);
         if (animationPassed >= 250) {
           this.playAnimation(this.IMAGES_SLEEP);
           this.lastRestAnimation = Date.now();
         }
-      } else if (timePassed >= 5000) {
-        if (animationPassed >= 150) {
-          this.playAnimation(this.IMAGES_IDLE);
-          this.lastRestAnimation = Date.now();
-        }
       } else {
-        this.img = this.imageCache[this.IMAGES_WALKING[0]];
+        this.setLoopSound(null);
+        if (timePassed >= 5000) {
+          if (animationPassed >= 150) {
+            this.playAnimation(this.IMAGES_IDLE);
+            this.lastRestAnimation = Date.now();
+          }
+        } else {
+          this.img = this.imageCache[this.IMAGES_WALKING[0]];
+        }
       }
     }
   }
@@ -202,8 +215,8 @@ class Character extends MovableObject {
   updateCamera() {
     const canvas = this.world.canvas;
     const level = this.world.level;
-    // Pepes Bildmitte bleibt beim Scrollen bei 25 % der Bildschirmbreite.
-    const followX = canvas.width * 0.25 - this.width / 2;
+    // Die Kamera folgt Pepe ab 35 % der Bildschirmbreite.
+    const followX = canvas.width * 0.35 - this.width / 2;
     const cameraEndX = Math.min(0, canvas.width - level.backgroundEndX);
     const panDistance = 600;
     const panStartX = level.level_end_x - panDistance;
@@ -251,26 +264,60 @@ class Character extends MovableObject {
       itemCenterY >= area.y && itemCenterY <= area.y + area.height;
   }
 
+  getHitbox(mirrored = false) {
+    const left = mirrored ? this.offset.right : this.offset.left;
+    return {
+      x: this.x + left,
+      y: this.y + this.offset.top,
+      width: this.width - this.offset.left - this.offset.right,
+      height: this.height - this.offset.top - this.offset.bottom,
+    };
+  }
+
   drawFrame(ctx) {
     super.drawFrame(ctx);
-    // Der rote Rahmen zeigt den Abstand zum blauen Bildrand.
+    // Beim Zeichnen ist die Blickrichtung bereits gespiegelt.
+    const hitbox = this.getHitbox();
     ctx.save();
     ctx.strokeStyle = "red";
     ctx.lineWidth = 2;
-    ctx.strokeRect(
-      this.x + this.offset.left,
-      this.y + this.offset.top,
-      this.width - this.offset.left - this.offset.right,
-      this.height - this.offset.top - this.offset.bottom,
-    );
+    ctx.strokeRect(hitbox.x, hitbox.y, hitbox.width, hitbox.height);
     ctx.restore();
   }
 
   jump() {
+    this.setLoopSound(null);
+    this.playSound(this.sounds.jumping);
     this.jumpState = "jumping";
     this.currentImage = 0;
     // Der nächste Physikschritt bewegt Pepe direkt nach oben.
     this.speedY = this.jumpSpeed;
     this.animateJump();
+  }
+
+  hit(damage) {
+    super.hit(damage);
+    this.setLoopSound(null);
+    this.playSound(this.sounds.hurt);
+  }
+
+  playSound(sound) {
+    sound.currentTime = 0;
+    // Der Browser kann Ton vor der ersten Eingabe blockieren.
+    sound.play().catch(() => {});
+  }
+
+  setLoopSound(sound) {
+    // Die Schleife nur beim Wechsel der Animation starten oder stoppen.
+    if (this.activeLoop === sound) {
+      return;
+    }
+    if (this.activeLoop) {
+      this.activeLoop.pause();
+    }
+    this.activeLoop = sound;
+    if (sound) {
+      this.playSound(sound);
+    }
   }
 }
