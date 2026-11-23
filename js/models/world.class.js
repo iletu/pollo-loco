@@ -307,7 +307,10 @@ class World {
     this.drawBossBar();
     if (this.character.isDead() &&
         this.getRetreatX() + this.camera_x + this.character.width <= 0) {
-      this.drawLossMessage();
+      this.drawEndMessage("Try Again!");
+    } else if (!this.character.isDead() &&
+        this.bossEggCollectedAt !== null && !this.isCelebrating()) {
+      this.drawEndMessage("You Win!");
     }
 
     // Draw() wird immer wieder aufgerufen
@@ -406,11 +409,10 @@ class World {
     this.ctx.restore();
   }
 
-  drawLossMessage() {
+  drawEndMessage(label) {
     this.ctx.save();
     const centerX = this.canvas.width / 2;
     const centerY = this.canvas.height / 2;
-    const label = "Try Again!";
     this.ctx.font = "bold 66px sans-serif";
     this.ctx.textAlign = "center";
     this.ctx.textBaseline = "middle";
