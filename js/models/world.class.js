@@ -6,11 +6,9 @@ class World {
   ctx;
   keyboard;
   camera_x = 0;
-  statusBar = new StatusBar();
+  statusBar = new HealthHearts("img/7_statusbars/3_icons/pepe-portrait.png");
   endboss = this.level.enemies.find((enemy) => enemy instanceof Endboss);
-  bossBar = new StatusBar([0, 20, 40, 60, 80, 100].map((percentage) =>
-    `img/7_statusbars/2_statusbar_endboss/orange/orange${percentage}.png`
-  ));
+  bossBar = new HealthHearts("img/7_statusbars/3_icons/boss-portrait.png");
   thrownChilis = [];
   lastThrow = 0;
   bossEgg = null;
@@ -20,38 +18,38 @@ class World {
 
   goldenEggs = [
     new GoldenEgg(250, 270),
-    new GoldenEgg(285, 200),
+    new GoldenEgg(285, 205),
     new GoldenEgg(320, 270),
-    new GoldenEgg(700, 200),
+    new GoldenEgg(700, 205),
     new GoldenEgg(850, 270),
-    new GoldenEgg(1000, 270),
-    new GoldenEgg(1035, 200),
-    new GoldenEgg(1070, 270),
-    new GoldenEgg(1300, 200),
-    new GoldenEgg(1600, 270),
-    new GoldenEgg(1900, 270),
-    new GoldenEgg(1935, 200),
-    new GoldenEgg(1970, 270),
+    new GoldenEgg(1000, 245),
+    new GoldenEgg(1035, 175),
+    new GoldenEgg(1070, 245),
+    new GoldenEgg(1300, 190),
+    new GoldenEgg(1600, 250),
+    new GoldenEgg(1900, 225),
+    new GoldenEgg(1935, 165),
+    new GoldenEgg(1970, 225),
     new GoldenEgg(2200, 270),
   ];
   // Jede Chili bekommt ihre Position im Level als x und y.
   chilis = [
-    new Chili(220, 350),
-    new Chili(480, 350),
-    new Chili(625, 250),
-    new Chili(925, 350),
-    new Chili(1210, 250),
-    new Chili(1450, 350),
-    new Chili(1760, 350),
-    new Chili(2100, 350),
+    new Chili(220, 335),
+    new Chili(480, 265),
+    new Chili(625, 200),
+    new Chili(925, 335),
+    new Chili(1210, 220),
+    new Chili(1450, 335),
+    new Chili(1760, 190),
+    new Chili(2100, 335),
   ];
 
-  eggBar = new CollectibleBar(
-    44, "img/8_golden_egg/golden_egg_1.png",
+  eggCounter = new CollectibleCounter(
+    "img/8_golden_egg/golden_egg_1.png",
     this.goldenEggs.length,
   );
-  chiliBar = new CollectibleBar(
-    74, "img/6_chili/chili.png",
+  chiliCounter = new CollectibleCounter(
+    "img/6_chili/chili.png",
     this.chilis.length,
   );
 
@@ -60,8 +58,9 @@ class World {
     this.canvas = canvas;
     this.keyboard = keyboard;
     this.bossBar.x = this.canvas.width - this.bossBar.width - 10;
-    // Der Balken sitzt im Boss-PNG höher, deshalb zeichnen wir es 6 Pixel tiefer.
-    this.bossBar.y = this.statusBar.y + 6;
+    // Beide Zähler folgen direkt auf Pepes Herzleiste.
+    this.eggCounter.x = this.statusBar.x + this.statusBar.width + 12;
+    this.chiliCounter.x = this.eggCounter.x + this.eggCounter.width + 11;
 
     this.setWorld();
     // this.character.animate();
@@ -92,7 +91,7 @@ class World {
 
   throwChili() {
     // Ohne Vorrat, im Tod oder innerhalb der Wartezeit wird kein Wurf gestartet.
-    if (this.chiliBar.amount === 0 || this.character.isDead() || this.isCelebrating() ||
+    if (this.chiliCounter.amount === 0 || this.character.isDead() || this.isCelebrating() ||
         Date.now() - this.lastThrow < 200) {
       return;
     }
@@ -105,7 +104,7 @@ class World {
     );
     this.thrownChilis.push(chili);
     // Ein erfolgreicher Wurf verbraucht genau eine Chili.
-    this.chiliBar.amount--;
+    this.chiliCounter.amount--;
     this.lastThrow = Date.now();
   }
 
@@ -175,20 +174,20 @@ class World {
   collectGoldenEggs() {
     // Bei filter() bleibt ein Ei nur mit true in der Liste.
     this.goldenEggs = this.goldenEggs.filter((egg) => {
-      if (this.character.isColliding(egg)) {
+      if (this.character.canCollect(egg)) {
         egg.stopAnimation();
         return false;
       }
       return true;
     });
     // Gesammelte Eier sind alle Eier minus die übrigen im Level.
-    this.eggBar.amount = this.eggBar.total - this.goldenEggs.length;
+    this.eggCounter.amount = this.eggCounter.total - this.goldenEggs.length;
   }
 
   collectChilis() {
     this.chilis = this.chilis.filter((chili) => {
-      if (this.character.isColliding(chili)) {
-        this.chiliBar.amount++;
+      if (this.character.canCollect(chili)) {
+        this.chiliCounter.amount++;
         // Die eingesammelte Chili verschwindet aus dem Level.
         return false;
       }
@@ -230,8 +229,8 @@ class World {
     // Die Statusleisten bleiben beim Scrollen an derselben Bildschirmposition.
     this.ctx.translate(-this.camera_x, 0);
     this.addToMap(this.statusBar);
-    this.addToMap(this.eggBar);
-    this.addToMap(this.chiliBar);
+    this.addToMap(this.eggCounter);
+    this.addToMap(this.chiliCounter);
     this.drawBossBar();
 
     // Draw() wird immer wieder aufgerufen

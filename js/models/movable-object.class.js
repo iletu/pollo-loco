@@ -7,6 +7,7 @@ class MovableObject extends DrawableObject {
   acceleration = 2.5;
   energy = 100;
   lastHit = 0;
+  hurtDuration = 1000;
 
   groundY = 155;
 
@@ -50,9 +51,7 @@ class MovableObject extends DrawableObject {
   }
 
   isHurt() {
-    let timepassed = new Date().getTime() - this.lastHit; // Difference in ms
-    timepassed = timepassed / 1000; // difference in s
-    return timepassed < 1;
+    return Date.now() - this.lastHit < this.hurtDuration;
   }
 
   isDead() {

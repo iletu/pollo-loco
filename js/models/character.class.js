@@ -2,6 +2,7 @@ class Character extends MovableObject {
   height = 280;
   width = 150;
   offset = { top: 105, right: 44, bottom: 15, left: 22 };
+  hurtDuration = 500; // Pause zwischen zwei Treffern in Millisekunden.
   // y = 155;
   y = 50;
   speed = 8;
@@ -224,6 +225,30 @@ class Character extends MovableObject {
       cameraX = cameraEndX;
     }
     this.world.camera_x = cameraX;
+  }
+
+  getCollectArea(mirrored = false) {
+    const left = mirrored ? this.offset.right : this.offset.left;
+    const right = mirrored ? this.offset.left : this.offset.right;
+    const bodyCenterX = this.x + (left + this.width - right) / 2;
+    const collectWidth = 78;
+    const collectTop = this.offset.top + 14;
+    return {
+      x: bodyCenterX - collectWidth / 2,
+      y: this.y + collectTop,
+      width: collectWidth,
+      height: this.height - collectTop - this.offset.bottom,
+    };
+  }
+
+  canCollect(item) {
+    const area = this.getCollectArea(this.otherDirection);
+    const itemCenterX = item.x + item.width / 2;
+    const itemCenterY = item.y + item.height / 2;
+
+    // Die Mitte des Gegenstands muss im Sammelbereich liegen.
+    return itemCenterX >= area.x && itemCenterX <= area.x + area.width &&
+      itemCenterY >= area.y && itemCenterY <= area.y + area.height;
   }
 
   drawFrame(ctx) {
