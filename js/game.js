@@ -1,18 +1,47 @@
 let canvas;
 let world;
 let keyboard = new Keyboard();
-const backgroundMusic = new Audio("audio/bg-music.mp3");
+const gameSounds = [];
+let isMuted = false;
+
+function createGameSound(path) {
+  const sound = new Audio(path);
+  sound.muted = isMuted;
+  gameSounds.push(sound);
+  return sound;
+}
+
+const backgroundMusic = createGameSound("audio/bg-music.mp3");
 backgroundMusic.volume = 0.05;
 backgroundMusic.loop = true;
 
+function toggleMute(event) {
+  isMuted = !isMuted;
+  // Auch Töne, die gerade laufen, werden sofort stumm.
+  gameSounds.forEach((sound) => {
+    sound.muted = isMuted;
+  });
+  const button = document.getElementById("mute-button");
+  button.setAttribute("aria-pressed", String(isMuted));
+  // Nach einem Mausklick soll die Leertaste wieder Pepe springen lassen.
+  if (event.detail > 0) {
+    button.blur();
+  }
+  startBackgroundMusic();
+}
+
 function startBackgroundMusic() {
   // Der Browser erlaubt Musik erst nach einer Eingabe.
-  if (backgroundMusic.paused) {
+  if (!isMuted && backgroundMusic.paused) {
     backgroundMusic.play().catch(() => {});
   }
 }
 
-window.addEventListener("pointerdown", startBackgroundMusic);
+window.addEventListener("pointerdown", (event) => {
+  if (event.target.id !== "mute-button") {
+    startBackgroundMusic();
+  }
+});
 
 function init() {
   canvas = document.getElementById("canvas");
@@ -22,6 +51,9 @@ function init() {
 }
 
 window.addEventListener("keydown", (event) => {
+  if (event.target.id === "mute-button" && (event.code === "Space" || event.code === "Enter")) {
+    return;
+  }
   startBackgroundMusic();
   console.log(event.code);
 

@@ -16,15 +16,15 @@ class World {
   celebrationDuration = 1450;
   defeatFlashDuration = 360;
   bossEggX;
-  eggSound = new Audio("audio/sounds/collectibles/collectSound.wav");
-  bossEggSound = new Audio("audio/sounds/collectibles/bossEggAppear.wav");
-  victorySound = new Audio("audio/sounds/game/victory.wav");
-  chiliSound = new Audio("audio/sounds/collectibles/bottleCollectSound.wav");
-  chiliThrowSound = new Audio("audio/sounds/throwable/chiliThrow.wav");
-  bossApproachSound = new Audio("audio/sounds/endboss/endbossApproach-game.wav");
-  bossHitSound = new Audio("audio/sounds/chicken/chickenDead2.mp3");
-  chickenHitSound = new Audio("audio/sounds/chicken/chickenDead.mp3");
-  chickenCluckSound = new Audio("audio/sounds/chicken/chickenCluck.m4a");
+  eggSound = createGameSound("audio/sounds/collectibles/collectSound.wav");
+  bossEggSound = createGameSound("audio/sounds/collectibles/bossEggAppear.wav");
+  victorySound = createGameSound("audio/sounds/game/victory.wav");
+  chiliSound = createGameSound("audio/sounds/collectibles/bottleCollectSound.wav");
+  chiliThrowSound = createGameSound("audio/sounds/throwable/chiliThrow.wav");
+  bossApproachSound = createGameSound("audio/sounds/endboss/endbossApproach-game.wav");
+  bossHitSound = createGameSound("audio/sounds/chicken/chickenDead2.mp3");
+  chickenHitSound = createGameSound("audio/sounds/chicken/chickenDead.mp3");
+  chickenCluckSound = createGameSound("audio/sounds/chicken/chickenCluck.m4a");
   lastChickenCluck = 0;
   bossApproachPlayed = false;
   nextEggSoundAt = 0;
@@ -81,10 +81,10 @@ class World {
     this.canvas = canvas;
     this.keyboard = keyboard;
     this.eggSound.volume = 0.35;
-    this.bossEggSound.volume = 0.6;
-    this.victorySound.volume = 0.65;
+    this.bossEggSound.volume = 0.30;
+    this.victorySound.volume = 0.35;
     this.chiliSound.volume = 0.35;
-    this.chiliThrowSound.volume = 0.45;
+    this.chiliThrowSound.volume = 0.25;
     this.bossApproachSound.volume = 0.55;
     this.bossHitSound.volume = 0.65;
     this.chickenHitSound.volume = 0.55;
@@ -416,7 +416,7 @@ class World {
     this.ctx.textBaseline = "middle";
 
     // Das Schild bleibt niedriger als die Schrift.
-    const panelWidth = this.ctx.measureText(label).width + 36;
+    const panelWidth = this.ctx.measureText(label).width + 24;
     this.ctx.beginPath();
     this.ctx.roundRect(centerX - panelWidth / 2, centerY - 24, panelWidth, 48, 14);
     this.ctx.fillStyle = this.statusBar.BACKGROUND_COLOR;

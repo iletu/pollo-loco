@@ -66,10 +66,10 @@ class Character extends MovableObject {
   ];
   world;
   sounds = {
-    running: new Audio("audio/sounds/character/characterRun.mp3"),
-    jumping: new Audio("audio/sounds/character/characterJump.wav"),
-    hurt: new Audio("audio/sounds/character/characterDamage.mp3"),
-    snoring: new Audio("audio/sounds/character/characterSnoring.mp3"),
+    running: createGameSound("audio/sounds/character/characterRun.mp3"),
+    jumping: createGameSound("audio/sounds/character/characterJump.wav"),
+    hurt: createGameSound("audio/sounds/character/characterDamage.mp3"),
+    snoring: createGameSound("audio/sounds/character/characterSnoring.mp3"),
   };
   activeLoop = null;
 
