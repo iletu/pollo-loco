@@ -95,8 +95,8 @@ class Character extends MovableObject {
   animate() {
     const animationInterval = 50;
     setInterval(() => {
-      // Beim Schweben ist die Steuerung kurz pausiert.
-      if (this.isDead() || this.world.isCelebrating()) {
+      // Nach Sieg oder Niederlage übernimmt die Abschlussanimation.
+      if (this.isDead() || this.world.bossEggCollectedAt !== null) {
         return;
       }
       const keyboard = this.world.keyboard;
@@ -127,8 +127,7 @@ class Character extends MovableObject {
       if (this.isDead()) {
         return;
       }
-      if (this.world.isCelebrating()) {
-        this.setLoopSound(null);
+      if (this.world.bossEggCollectedAt !== null) {
         return;
       }
 

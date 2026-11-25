@@ -140,7 +140,7 @@ class World {
 
   throwChili() {
     // Ohne Vorrat, im Tod oder innerhalb der Wartezeit wird kein Wurf gestartet.
-    if (this.chiliCounter.amount === 0 || this.character.isDead() || this.isCelebrating() ||
+    if (this.chiliCounter.amount === 0 || this.character.isDead() || this.bossEggCollectedAt !== null ||
         Date.now() - this.lastThrow < 200) {
       return;
     }
@@ -159,7 +159,7 @@ class World {
   }
 
   checkCollisions() {
-    if (this.character.isDead() || this.isCelebrating()) {
+    if (this.character.isDead() || this.bossEggCollectedAt !== null) {
       return;
     }
     // Für Gegnerkontakt zählt Pepes roter Rahmen.
@@ -225,6 +225,7 @@ class World {
       this.bossEgg = null;
       this.bossEggCollectedAt = Date.now();
       this.character.lastAction = this.bossEggCollectedAt;
+      this.character.setLoopSound(null);
       this.bossEggSound.pause();
       this.character.playSound(this.victorySound);
     }
@@ -340,7 +341,11 @@ class World {
     }
 
     if (!this.isCelebrating()) {
-      this.addToMap(this.character);
+      if (this.bossEggCollectedAt !== null) {
+        this.drawVictoryExit();
+      } else {
+        this.addToMap(this.character);
+      }
       return;
     }
 
@@ -398,14 +403,33 @@ class World {
       return;
     }
 
-    pepe.setLoopSound(pepe.sounds.running);
-    const frame = Math.floor(runningTime / 65) % pepe.IMAGES_WALKING.length;
+    this.drawRunningPepe(x, runningTime, true);
+  }
+
+  drawVictoryExit() {
+    const pepe = this.character;
+    // Der Schriftzug steht schon kurz da, bevor Pepe losläuft.
+    const runningTime = Date.now() - this.bossEggCollectedAt - this.celebrationDuration - 300;
+    const x = pepe.x + Math.max(0, runningTime) * 0.48;
+    if (x + this.camera_x >= this.canvas.width) {
+      pepe.setLoopSound(null);
+      return;
+    }
+    this.drawRunningPepe(x, runningTime);
+  }
+
+  drawRunningPepe(x, runningTime, facingLeft = false) {
+    const pepe = this.character;
+    pepe.setLoopSound(runningTime >= 0 ? pepe.sounds.running : null);
+    const frame = Math.floor(Math.max(0, runningTime) / 65) % pepe.IMAGES_WALKING.length;
     const image = pepe.imageCache[pepe.IMAGES_WALKING[frame]];
-    // Für die Flucht schaut Pepe nach links.
     this.ctx.save();
-    this.ctx.translate(x + pepe.width, 0);
-    this.ctx.scale(-1, 1);
-    this.ctx.drawImage(image, 0, pepe.y, pepe.width, pepe.height);
+    if (facingLeft) {
+      this.ctx.translate(x + pepe.width, 0);
+      this.ctx.scale(-1, 1);
+      x = 0;
+    }
+    this.ctx.drawImage(image, x, pepe.y, pepe.width, pepe.height);
     this.ctx.restore();
   }
 
