@@ -8,10 +8,12 @@ class World {
   camera_x = 0;
   previousPlayerBottom;
   statusBar = new HealthHearts("img/7_statusbars/3_icons/pepe-portrait.png");
-  endboss = this.level.enemies.find((enemy) => enemy instanceof Endboss);
+  endboss = null;
   bossBar = new HealthHearts("img/7_statusbars/3_icons/boss-portrait.png");
   thrownChilis = [];
   lastThrow = 0;
+  bossHintPhase = "";
+  bossHintStartedAt = 0;
   bossEgg = null;
   bossEggCollectedAt = null;
   celebrationDuration = 1450;
@@ -22,7 +24,6 @@ class World {
     new Cactus(1750),
     new Cactus(2850),
     new Cactus(3650),
-    new Cactus(4400),
   ];
   bossEggX;
   eggSound = createGameSound("audio/sounds/collectibles/collectSound.wav");
@@ -65,13 +66,13 @@ class World {
     new Chili(220, 335),
     new Chili(480, 265),
     new Chili(625, 200),
-    new Chili(925, 335),
+    new Chili(1100, 335),
     new Chili(1350, 245),
     new Chili(1930, 220),
     new Chili(2290, 335),
     new Chili(2790, 335),
     new Chili(3230, 265),
-    new Chili(3660, 190),
+    new Chili(3880, 190),
     new Chili(4400, 220),
     new Chili(4780, 335),
   ];
@@ -110,6 +111,16 @@ class World {
 
   setWorld() {
     this.character.world = this;
+    for (const enemy of this.level.enemies) {
+      if (enemy instanceof Endboss) {
+        this.endboss = enemy;
+        // Boss gefunden: Die Suche ist fertig.
+        break;
+      }
+    }
+    if (this.endboss) {
+      this.endboss.world = this;
+    }
   }
 
   run() {
@@ -154,6 +165,13 @@ class World {
       return;
     }
 
+    // Bei 40 Energie ist der Boss klein genug für die Sprungphase.
+    if (this.endboss) {
+      if (this.endboss.activated && !this.endboss.isDead() && this.endboss.energy <= 40) {
+        return;
+      }
+    }
+
     const chili = new ThrownChili(
       this.character.x + this.character.width / 2,
       this.character.y + 100,
@@ -175,7 +193,7 @@ class World {
     const hitbox = this.character.getHitbox(this.character.otherDirection);
     this.cacti.forEach((cactus) => {
       if (cactus.touches(hitbox) && !this.character.isHurt()) {
-        this.character.hit(10);
+        this.character.hit(5);
         this.statusBar.setPercentage(this.character.energy);
       }
     });
@@ -184,14 +202,18 @@ class World {
     }
     const feet = this.character.getFootHitbox();
     const bottom = feet.y + feet.height;
-    const previousBottom = this.previousPlayerBottom ?? bottom;
+    let previousBottom = this.previousPlayerBottom;
+    // Bei der ersten Prüfung gibt es noch keine vorherige Fußposition.
+    if (previousBottom === undefined) {
+      previousBottom = bottom;
+    }
     this.previousPlayerBottom = bottom;
     if (this.checkStomp(feet, previousBottom, bottom)) {
       return;
     }
     this.level.enemies.forEach((enemy) => {
       if (!enemy.isDead() && enemy.isColliding(hitbox) && !this.character.isHurt()) {
-        this.character.hit(10);
+        this.character.hit(5);
         this.statusBar.setPercentage(this.character.energy);
         console.log("Collision with Character, energy ", this.character.energy);
       }
@@ -203,32 +225,60 @@ class World {
     if (bottom <= previousBottom) {
       return false;
     }
-    const chicken = this.level.enemies.find((enemy) =>
-      enemy instanceof Chicken && !enemy.isDead() &&
-      previousBottom <= enemy.y && bottom >= enemy.y &&
-      hitbox.x < enemy.x + enemy.width && hitbox.x + hitbox.width > enemy.x
-    );
-    if (!chicken) {
-      return false;
+    for (const enemy of this.level.enemies) {
+      if (!(enemy instanceof Chicken || enemy instanceof Endboss) || enemy.isDead()) {
+        // Diesen Eintrag überspringen und den nächsten Gegner prüfen.
+        continue;
+      }
+      let top = enemy.y;
+      if (enemy instanceof Endboss) {
+        // Über dem sichtbaren Bosskopf enthält das Bild einen transparenten Rand.
+        top = enemy.y + enemy.height * 0.18;
+      }
+      const crossesTop = previousBottom <= top && bottom >= top;
+      const overlapsFeet = hitbox.x < enemy.x + enemy.width &&
+        hitbox.x + hitbox.width > enemy.x;
+      if (crossesTop && overlapsFeet) {
+        enemy.hit();
+        if (enemy instanceof Endboss) {
+          this.character.speedY = this.character.jumpSpeed;
+          this.character.playSound(this.bossHitSound);
+          if (enemy.isDead()) {
+            this.spawnBossEgg(enemy);
+          }
+        } else {
+          this.character.speedY = 12;
+          this.character.playSound(this.chickenHitSound);
+        }
+        return true;
+      }
     }
-    chicken.hit();
-    this.character.speedY = 12;
-    this.character.playSound(this.chickenHitSound);
-    return true;
+    return false;
   }
 
   checkChiliHits() {
-    this.thrownChilis = this.thrownChilis.filter((chili) => {
+    const flyingChilis = [];
+    for (const chili of this.thrownChilis) {
       if (chili.y >= this.canvas.height) {
         chili.stop();
-        return false;
+        continue;
       }
 
       // Pro Chili zählt nur der erste Treffer auf einen lebenden Gegner.
-      const enemy = this.level.enemies.find((enemy) =>
-        !enemy.isDead() && chili.isColliding(enemy)
-      );
+      let enemy = null;
+      for (const candidate of this.level.enemies) {
+        if (!candidate.isDead() && chili.isColliding(candidate)) {
+          enemy = candidate;
+          // Eine Chili trifft nur den ersten passenden Gegner.
+          break;
+        }
+      }
       if (enemy) {
+        // Bereits fliegende Chilis dürfen die Sprungphase nicht überspringen.
+        if (enemy instanceof Endboss && enemy.energy <= 40) {
+          chili.stop();
+          continue;
+        }
         enemy.hit();
         if (enemy instanceof Endboss) {
           this.character.playSound(this.bossHitSound);
@@ -239,10 +289,11 @@ class World {
           this.character.playSound(this.chickenHitSound);
         }
         chili.stop();
-        return false;
+      } else {
+        flyingChilis.push(chili);
       }
-      return true;
-    });
+    }
+    this.thrownChilis = flyingChilis;
   }
 
   spawnBossEgg(boss) {
@@ -259,8 +310,8 @@ class World {
   }
 
   getPlayerEndX() {
-    // Erst nach dem Sieg darf Pepe zum großen Ei weiterlaufen.
-    return this.bossEggX ?? this.level.level_end_x;
+    // Pepe darf auch während des Kampfes bis ans Ende der Bossarena laufen.
+    return this.level.backgroundEndX - this.character.width;
   }
 
   collectBossEgg() {
@@ -337,13 +388,18 @@ class World {
     if (this.character.isDead()) {
       this.drawDefeatFlock();
     }
-    const visibleEnemies = this.level.enemies.filter((enemy) => {
-      if (enemy instanceof Chicken) {
-        return enemy.isVisible();
+    for (const enemy of this.level.enemies) {
+      if (enemy instanceof Endboss && this.character.isDead()) {
+        continue;
       }
-      return !enemy.isDead();
-    });
-    this.addObjectsToMap(visibleEnemies);
+      if (enemy instanceof Chicken) {
+        if (enemy.isVisible()) {
+          this.addToMap(enemy);
+        }
+      } else if (!enemy.isDead()) {
+        this.addToMap(enemy);
+      }
+    }
     this.addObjectsToMap(this.level.clouds);
 
     this.addObjectsToMap(this.thrownChilis);
@@ -354,6 +410,7 @@ class World {
     this.addToMap(this.eggCounter);
     this.addToMap(this.chiliCounter);
     this.drawBossBar();
+    this.drawBossHint();
     if (this.character.isDead() &&
         this.getRetreatX() + this.camera_x + this.character.width <= 0) {
       this.drawEndMessage("Try Again!");
@@ -380,6 +437,47 @@ class World {
       this.bossBar.setPercentage(this.endboss.energy);
       this.addToMap(this.bossBar);
     }
+  }
+
+  drawBossHint() {
+    if (!this.endboss || !this.endboss.activated || this.endboss.isDead() || this.character.isDead()) {
+      return;
+    }
+
+    let phase = "chili";
+    let title = "Mach ihn klein!";
+    let instruction = "Triff den Boss mit Chilis.";
+    if (this.endboss.energy <= 40) {
+      phase = "jump";
+      title = "Jetzt springen!";
+      instruction = "Spring dem Boss auf den Kopf.";
+    }
+    if (this.bossHintPhase !== phase) {
+      this.bossHintPhase = phase;
+      this.bossHintStartedAt = Date.now();
+    }
+    if (Date.now() - this.bossHintStartedAt >= 4500) {
+      return;
+    }
+
+    const centerX = this.canvas.width / 2;
+    this.ctx.save();
+    this.ctx.beginPath();
+    this.ctx.roundRect(centerX - 180, 80, 360, 68, 12);
+    this.ctx.fillStyle = this.statusBar.BACKGROUND_COLOR;
+    this.ctx.fill();
+    this.ctx.strokeStyle = "#d9ad51";
+    this.ctx.lineWidth = 3;
+    this.ctx.stroke();
+    this.ctx.textAlign = "center";
+    this.ctx.textBaseline = "middle";
+    this.ctx.fillStyle = "#ffd573";
+    this.ctx.font = "bold 24px sans-serif";
+    this.ctx.fillText(title, centerX, 103);
+    this.ctx.fillStyle = "#fff0ce";
+    this.ctx.font = "bold 18px sans-serif";
+    this.ctx.fillText(instruction, centerX, 129);
+    this.ctx.restore();
   }
 
   drawCharacter() {
@@ -440,31 +538,45 @@ class World {
 
   drawDefeatFlock() {
     if (this.defeatFlock === null) {
-      this.defeatFlock = [];
-      for (let i = 0; i < 8; i++) {
-        let chicken;
-        if (i % 2 === 0) {
-          chicken = new Chicken(0);
-        } else {
-          chicken = new SmallChicken(0, 100, 2);
-        }
-        // Diese Schar bewegt sich über die Zeit der Niederlagenanimation.
-        clearInterval(chicken.movementInterval);
-        clearInterval(chicken.animationInterval);
-        this.defeatFlock.push(chicken);
-      }
+      this.createDefeatFlock();
     }
 
     const runningTime = Math.max(0, Date.now() - this.character.lastHit - this.defeatFlashDuration);
     const rightScreenEdge = this.canvas.width - this.camera_x;
     for (let i = 0; i < this.defeatFlock.length; i++) {
       const chicken = this.defeatFlock[i];
-      chicken.x = rightScreenEdge + i * 35 - runningTime * 0.46;
+      const startX = rightScreenEdge + i * 35;
+      const distance = runningTime * 0.46;
+      chicken.x = startX - distance;
+      // Nach dem letzten Laufbild beginnt die Bildfolge wieder von vorne.
       const frame = Math.floor(runningTime / 90) % chicken.IMAGES_WALKING.length;
       chicken.img = chicken.imageCache[chicken.IMAGES_WALKING[frame]];
       if (chicken.x + chicken.width + this.camera_x > 0) {
         this.addToMap(chicken);
       }
+    }
+  }
+
+  createDefeatFlock() {
+    this.defeatFlock = [];
+    for (let i = 0; i < 8; i++) {
+      let chicken;
+      if (i % 2 === 0) {
+        chicken = new Chicken(0);
+      } else {
+        chicken = new SmallChicken(0, 100, 2);
+      }
+      // Die Niederlagenanimation übernimmt Bewegung und Bildwechsel.
+      clearInterval(chicken.movementInterval);
+      clearInterval(chicken.animationInterval);
+      this.defeatFlock.push(chicken);
+    }
+    // Der Boss verfolgt Pepe erst nach Beginn seiner Begegnung.
+    if (this.endboss && this.endboss.activated && !this.endboss.isDead()) {
+      clearInterval(this.endboss.movementInterval);
+      clearInterval(this.endboss.animationInterval);
+      this.endboss.otherDirection = false;
+      this.defeatFlock.push(this.endboss);
     }
   }
 

@@ -6,7 +6,7 @@ class Character extends MovableObject {
   // y = 155;
   y = 50;
   speed = 8;
-  jumpSpeed = 30; // Mehr Sprunghöhe zum Überspringen der Kakteen.
+  jumpSpeed = 30; // Sprunghöhe zum Überspringen der Kakteen.
   jumpState = "idle";
   jumpFrame = 0;
 
