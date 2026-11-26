@@ -273,6 +273,21 @@ class Character extends MovableObject {
     };
   }
 
+  getFootHitbox() {
+    // Der schmale Bereich umfasst die Schuhe in Pepes fallender Sprungpose.
+    const footWidth = this.width * 0.27;
+    let left = this.width * 0.49;
+    if (this.otherDirection) {
+      left = this.width - left - footWidth;
+    }
+    return {
+      x: this.x + left,
+      y: this.y + this.height - this.offset.bottom - 10,
+      width: footWidth,
+      height: 10,
+    };
+  }
+
   drawFrame(ctx) {
     super.drawFrame(ctx);
     // Beim Zeichnen ist die Blickrichtung bereits gespiegelt.

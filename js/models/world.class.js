@@ -165,10 +165,11 @@ class World {
     }
     // Für Gegnerkontakt zählt Pepes roter Rahmen.
     const hitbox = this.character.getHitbox(this.character.otherDirection);
-    const bottom = hitbox.y + hitbox.height;
+    const feet = this.character.getFootHitbox();
+    const bottom = feet.y + feet.height;
     const previousBottom = this.previousPlayerBottom ?? bottom;
     this.previousPlayerBottom = bottom;
-    if (this.checkStomp(hitbox, previousBottom, bottom)) {
+    if (this.checkStomp(feet, previousBottom, bottom)) {
       return;
     }
     this.level.enemies.forEach((enemy) => {
@@ -181,19 +182,19 @@ class World {
   }
 
   checkStomp(hitbox, previousBottom, bottom) {
-    // Pepes Füße müssen beim Fallen die Oberkante des Kükens überqueren.
+    // Pepes Füße müssen beim Fallen die Oberkante eines Huhns überqueren.
     if (bottom <= previousBottom) {
       return false;
     }
-    const chick = this.level.enemies.find((enemy) =>
-      enemy instanceof SmallChicken && !enemy.isDead() &&
+    const chicken = this.level.enemies.find((enemy) =>
+      enemy instanceof Chicken && !enemy.isDead() &&
       previousBottom <= enemy.y && bottom >= enemy.y &&
       hitbox.x < enemy.x + enemy.width && hitbox.x + hitbox.width > enemy.x
     );
-    if (!chick) {
+    if (!chicken) {
       return false;
     }
-    chick.hit();
+    chicken.hit();
     this.character.speedY = 12;
     this.character.playSound(this.chickenHitSound);
     return true;
