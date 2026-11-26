@@ -6,6 +6,7 @@ class World {
   ctx;
   keyboard;
   camera_x = 0;
+  previousPlayerBottom;
   statusBar = new HealthHearts("img/7_statusbars/3_icons/pepe-portrait.png");
   endboss = this.level.enemies.find((enemy) => enemy instanceof Endboss);
   bossBar = new HealthHearts("img/7_statusbars/3_icons/boss-portrait.png");
@@ -164,6 +165,12 @@ class World {
     }
     // Für Gegnerkontakt zählt Pepes roter Rahmen.
     const hitbox = this.character.getHitbox(this.character.otherDirection);
+    const bottom = hitbox.y + hitbox.height;
+    const previousBottom = this.previousPlayerBottom ?? bottom;
+    this.previousPlayerBottom = bottom;
+    if (this.checkStomp(hitbox, previousBottom, bottom)) {
+      return;
+    }
     this.level.enemies.forEach((enemy) => {
       if (!enemy.isDead() && enemy.isColliding(hitbox) && !this.character.isHurt()) {
         this.character.hit();
@@ -171,6 +178,25 @@ class World {
         console.log("Collision with Character, energy ", this.character.energy);
       }
     });
+  }
+
+  checkStomp(hitbox, previousBottom, bottom) {
+    // Pepes Füße müssen beim Fallen die Oberkante des Kükens überqueren.
+    if (bottom <= previousBottom) {
+      return false;
+    }
+    const chick = this.level.enemies.find((enemy) =>
+      enemy instanceof SmallChicken && !enemy.isDead() &&
+      previousBottom <= enemy.y && bottom >= enemy.y &&
+      hitbox.x < enemy.x + enemy.width && hitbox.x + hitbox.width > enemy.x
+    );
+    if (!chick) {
+      return false;
+    }
+    chick.hit();
+    this.character.speedY = 12;
+    this.character.playSound(this.chickenHitSound);
+    return true;
   }
 
   checkChiliHits() {
