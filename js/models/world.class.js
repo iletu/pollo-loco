@@ -627,7 +627,7 @@ class World {
     this.ctx.save();
     const centerX = this.canvas.width / 2;
     const centerY = this.canvas.height / 2;
-    this.ctx.font = "bold 66px sans-serif";
+    this.ctx.font = '66px "El Rio Lobo", serif';
     this.ctx.textAlign = "center";
     this.ctx.textBaseline = "middle";
 

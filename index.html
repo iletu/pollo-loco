@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="./style.css">
+    <link rel="preload" href="./fonts/ELRIOTT2.TTF" as="font" type="font/ttf" crossorigin>
     <title>Pollo Loco</title>
 
     <script src="./js/models/drawable-object.class.js"></script>
@@ -34,16 +35,15 @@
 
 <body onload="init()">
 
-    <h1>El pollo loco</h1>
-
-    <div class="game-toolbar">
-        <button id="mute-button" type="button" aria-label="Mute game audio" aria-pressed="false" onclick="toggleMute(event)">
-            <img src="./img/7_statusbars/3_icons/sound-on.png" alt="" draggable="false">
-        </button>
+    <div class="game-frame">
+        <h1 class="game-title">El Pollo Loco</h1>
+        <canvas id="canvas" width="720" height="480"></canvas>
+        <div class="game-toolbar">
+            <button id="mute-button" type="button" aria-label="Mute game audio" aria-pressed="false" onclick="toggleMute(event)">
+                <img src="./img/7_statusbars/3_icons/sound-on.png" alt="" draggable="false">
+            </button>
+        </div>
     </div>
-
-    <canvas id="canvas" width="720" height="480">
-    </canvas>
 
 </body>
 
