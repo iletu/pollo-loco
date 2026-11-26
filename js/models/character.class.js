@@ -2,11 +2,11 @@ class Character extends MovableObject {
   height = 280;
   width = 150;
   offset = { top: 105, right: 44, bottom: 15, left: 22 };
-  hurtDuration = 500; // Pause zwischen zwei Treffern in Millisekunden.
+  hurtDuration = 1000; // Eine Sekunde Schutz nach einem Treffer.
   // y = 155;
   y = 50;
   speed = 8;
-  jumpSpeed = 25;
+  jumpSpeed = 30; // Mehr Sprunghöhe zum Überspringen der Kakteen.
   jumpState = "idle";
   jumpFrame = 0;
 
@@ -286,17 +286,6 @@ class Character extends MovableObject {
       width: footWidth,
       height: 10,
     };
-  }
-
-  drawFrame(ctx) {
-    super.drawFrame(ctx);
-    // Beim Zeichnen ist die Blickrichtung bereits gespiegelt.
-    const hitbox = this.getHitbox();
-    ctx.save();
-    ctx.strokeStyle = "red";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(hitbox.x, hitbox.y, hitbox.width, hitbox.height);
-    ctx.restore();
   }
 
   jump() {

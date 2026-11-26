@@ -16,6 +16,14 @@ class World {
   bossEggCollectedAt = null;
   celebrationDuration = 1450;
   defeatFlashDuration = 360;
+  defeatFlock = null;
+  cacti = [
+    new Cactus(900),
+    new Cactus(1750),
+    new Cactus(2850),
+    new Cactus(3650),
+    new Cactus(4400),
+  ];
   bossEggX;
   eggSound = createGameSound("audio/sounds/collectibles/collectSound.wav");
   bossEggSound = createGameSound("audio/sounds/collectibles/bossEggAppear.wav");
@@ -165,6 +173,15 @@ class World {
     }
     // Für Gegnerkontakt zählt Pepes roter Rahmen.
     const hitbox = this.character.getHitbox(this.character.otherDirection);
+    this.cacti.forEach((cactus) => {
+      if (cactus.touches(hitbox) && !this.character.isHurt()) {
+        this.character.hit(10);
+        this.statusBar.setPercentage(this.character.energy);
+      }
+    });
+    if (this.character.isDead()) {
+      return;
+    }
     const feet = this.character.getFootHitbox();
     const bottom = feet.y + feet.height;
     const previousBottom = this.previousPlayerBottom ?? bottom;
@@ -174,7 +191,7 @@ class World {
     }
     this.level.enemies.forEach((enemy) => {
       if (!enemy.isDead() && enemy.isColliding(hitbox) && !this.character.isHurt()) {
-        this.character.hit();
+        this.character.hit(10);
         this.statusBar.setPercentage(this.character.energy);
         console.log("Collision with Character, energy ", this.character.energy);
       }
@@ -309,6 +326,7 @@ class World {
 
     this.ctx.translate(this.camera_x, 0);
     this.addObjectsToMap(this.level.backgroundObjects);
+    this.addObjectsToMap(this.cacti);
     this.addObjectsToMap(this.goldenEggs);
     this.addObjectsToMap(this.chilis);
     if (this.bossEgg) {
@@ -316,6 +334,9 @@ class World {
     }
 
     this.drawCharacter();
+    if (this.character.isDead()) {
+      this.drawDefeatFlock();
+    }
     const visibleEnemies = this.level.enemies.filter((enemy) => {
       if (enemy instanceof Chicken) {
         return enemy.isVisible();
@@ -413,6 +434,36 @@ class World {
       this.ctx.drawImage(image, pepe.x, pepe.y, pepe.width, pepe.height);
       if (pepe.otherDirection) {
         this.flipImageBack(pepe);
+      }
+    }
+  }
+
+  drawDefeatFlock() {
+    if (this.defeatFlock === null) {
+      this.defeatFlock = [];
+      for (let i = 0; i < 8; i++) {
+        let chicken;
+        if (i % 2 === 0) {
+          chicken = new Chicken(0);
+        } else {
+          chicken = new SmallChicken(0, 100, 2);
+        }
+        // Diese Schar bewegt sich über die Zeit der Niederlagenanimation.
+        clearInterval(chicken.movementInterval);
+        clearInterval(chicken.animationInterval);
+        this.defeatFlock.push(chicken);
+      }
+    }
+
+    const runningTime = Math.max(0, Date.now() - this.character.lastHit - this.defeatFlashDuration);
+    const rightScreenEdge = this.canvas.width - this.camera_x;
+    for (let i = 0; i < this.defeatFlock.length; i++) {
+      const chicken = this.defeatFlock[i];
+      chicken.x = rightScreenEdge + i * 35 - runningTime * 0.46;
+      const frame = Math.floor(runningTime / 90) % chicken.IMAGES_WALKING.length;
+      chicken.img = chicken.imageCache[chicken.IMAGES_WALKING[frame]];
+      if (chicken.x + chicken.width + this.camera_x > 0) {
+        this.addToMap(chicken);
       }
     }
   }
