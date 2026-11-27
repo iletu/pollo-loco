@@ -12,7 +12,7 @@ class MovableObject extends DrawableObject {
   groundY = 155;
 
   applyGravity() {
-    return setInterval(() => {
+    return setGameInterval(() => {
       if (this.isAboveGround() || this.speedY > 0) {
         this.y -= this.speedY;
         this.speedY -= this.acceleration;
@@ -46,11 +46,11 @@ class MovableObject extends DrawableObject {
       this.energy = 0;
     }
     // Die Trefferpause beginnt mit diesem Treffer.
-    this.lastHit = Date.now();
+    this.lastHit = gameTime();
   }
 
   isHurt() {
-    return Date.now() - this.lastHit < this.hurtDuration;
+    return gameTime() - this.lastHit < this.hurtDuration;
   }
 
   isDead() {
@@ -58,7 +58,7 @@ class MovableObject extends DrawableObject {
   }
 
   moveLeft() {
-    return setInterval(() => {
+    return setGameInterval(() => {
       this.x -= this.speed;
     }, 1000 / 60);
   }

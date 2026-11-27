@@ -24,7 +24,7 @@ class Chicken extends MovableObject {
     animate(frameTime) {
         this.movementInterval = this.startMoving();
 
-        this.animationInterval = setInterval(() => {
+        this.animationInterval = setGameInterval(() => {
             this.playAnimation(this.IMAGES_WALKING);
         }, frameTime);
     }
@@ -36,7 +36,7 @@ class Chicken extends MovableObject {
     hit() {
         // Ein Treffer stoppt das Huhn sofort.
         this.energy = 0;
-        this.lastHit = Date.now();
+        this.lastHit = gameTime();
         clearInterval(this.movementInterval);
         clearInterval(this.animationInterval);
         this.img = this.imageCache[this.IMAGE_DEAD];
@@ -47,7 +47,7 @@ class Chicken extends MovableObject {
             return true;
         }
         // Das Huhn blinkt dreimal und bleibt danach unsichtbar.
-        const timeSinceHit = Date.now() - this.lastHit;
+        const timeSinceHit = gameTime() - this.lastHit;
         return timeSinceHit < 480 && timeSinceHit % 160 < 80;
     }
 }

@@ -10,7 +10,7 @@ class Character extends MovableObject {
   jumpState = "idle";
   jumpFrame = 0;
 
-  lastAction = Date.now(); // Merkt sich die Zeit der letzten Aktion.
+  lastAction = gameTime(); // Merkt sich die Zeit der letzten Aktion.
   lastRestAnimation = 0; // Zeitpunkt des letzten Idle- oder Sleep-Bildwechsels.
 
   IMAGES_WALKING = [
@@ -94,7 +94,7 @@ class Character extends MovableObject {
 
   animate() {
     const animationInterval = 50;
-    setInterval(() => {
+    setGameInterval(() => {
       // Nach Sieg oder Niederlage übernimmt die Abschlussanimation.
       if (this.isDead() || this.world.bossEggCollectedAt !== null) {
         return;
@@ -123,7 +123,7 @@ class Character extends MovableObject {
       this.updateCamera();
     }, 1000 / 60);
 
-    setInterval(() => {
+    setGameInterval(() => {
       if (this.isDead()) {
         return;
       }
@@ -133,7 +133,7 @@ class Character extends MovableObject {
 
       // Trefferbilder haben Vorrang vor der normalen Bewegung.
       const hurtFrame = Math.floor(
-        (Date.now() - this.lastHit) / animationInterval,
+        (gameTime() - this.lastHit) / animationInterval,
       );
       if (hurtFrame < this.IMAGES_HURT.length) {
         this.img = this.imageCache[this.IMAGES_HURT[hurtFrame]];
@@ -176,7 +176,7 @@ class Character extends MovableObject {
     ) {
       this.img = this.imageCache[this.IMAGES_JUMPING[this.jumpFrame]];
       this.jumpFrame++;
-      this.lastAction = Date.now(); // Die Ruhezeit beginnt nach der Landung.
+      this.lastAction = gameTime(); // Die Ruhezeit beginnt nach der Landung.
       return;
     }
 
@@ -186,23 +186,23 @@ class Character extends MovableObject {
     if (keyboard.RIGHT || keyboard.LEFT) {
       this.setLoopSound(this.sounds.running);
       this.playAnimation(this.IMAGES_WALKING);
-      this.lastAction = Date.now(); // Wartezeit beim Laufen zurücksetzen.
+      this.lastAction = gameTime(); // Wartezeit beim Laufen zurücksetzen.
     } else {
-      let timePassed = Date.now() - this.lastAction;
-      let animationPassed = Date.now() - this.lastRestAnimation;
+      let timePassed = gameTime() - this.lastAction;
+      let animationPassed = gameTime() - this.lastRestAnimation;
 
       if (timePassed >= 15000) {
         this.setLoopSound(this.sounds.snoring);
         if (animationPassed >= 250) {
           this.playAnimation(this.IMAGES_SLEEP);
-          this.lastRestAnimation = Date.now();
+          this.lastRestAnimation = gameTime();
         }
       } else {
         this.setLoopSound(null);
         if (timePassed >= 5000) {
           if (animationPassed >= 150) {
             this.playAnimation(this.IMAGES_IDLE);
-            this.lastRestAnimation = Date.now();
+            this.lastRestAnimation = gameTime();
           }
         } else {
           this.img = this.imageCache[this.IMAGES_WALKING[0]];

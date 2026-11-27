@@ -20,7 +20,7 @@ class GoldenEgg extends MovableObject {
 
   animate() {
     // Unterschiedliche Glanzpunkte lassen das Ei funkeln.
-    this.animationInterval = setInterval(() => {
+    this.animationInterval = setGameInterval(() => {
       this.playAnimation(this.IMAGES);
       if (this.glow === 12) {
         this.glow = 25;

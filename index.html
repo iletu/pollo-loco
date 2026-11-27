@@ -7,7 +7,9 @@
     <link rel="stylesheet" href="./style.css">
     <link rel="preload" href="./fonts/ELRIOTT2.TTF" as="font" type="font/ttf" crossorigin>
     <title>Pollo Loco</title>
+    <link rel="icon" type="image/png" href="./img/8_golden_egg/golden_egg_1.png">
 
+    <script src="./js/game-timers.js"></script>
     <script src="./js/models/drawable-object.class.js"></script>
 
     <script src="./js/models/movable-object.class.js"></script>
@@ -37,13 +39,41 @@
 
     <div class="game-frame">
         <h1 class="game-title">El Pollo Loco</h1>
-        <canvas id="canvas" width="720" height="480"></canvas>
+        <section id="home-screen" class="home-screen" aria-label="Startseite">
+            <img class="home-trailer" src="./img/12_ui/trailer-sun-clouds.png" alt="Pepe flieht mit einem goldenen Ei vor dem Eierwächter und seiner Hühnerschar.">
+            <p class="home-caption">Hol dir die goldenen Eier<br>und stell dich dem Eierwächter!</p>
+        </section>
+        <canvas id="canvas" width="720" height="480" hidden></canvas>
         <div class="game-toolbar">
+            <button id="home-button" type="button" aria-label="Zur Startseite" onclick="showHome()" hidden>
+                <span class="home-icon" aria-hidden="true"></span>
+            </button>
+            <button id="restart-button" type="button" aria-label="Spiel starten" onclick="toggleGamePause(event)">
+                <img src="./img/7_statusbars/3_icons/play.png" alt="" draggable="false">
+                <span class="pause-symbol" aria-hidden="true"></span>
+            </button>
             <button id="mute-button" type="button" aria-label="Mute game audio" aria-pressed="false" onclick="toggleMute(event)">
                 <img src="./img/7_statusbars/3_icons/sound-on.png" alt="" draggable="false">
             </button>
+            <button id="help-button" type="button" aria-label="Spielanleitung öffnen" aria-haspopup="dialog" aria-controls="help-dialog" onclick="document.getElementById('help-dialog').showModal()">
+                <span class="direction-icon" aria-hidden="true"></span>
+            </button>
         </div>
     </div>
+
+    <dialog id="help-dialog" aria-labelledby="help-title" onclick="closeHelpOnBackdrop(event)">
+        <form method="dialog">
+            <button class="close-help" aria-label="Anleitung schließen">×</button>
+        </form>
+        <h2 id="help-title">So spielst du</h2>
+        <p>Pepe sammelt die goldenen Eier der Hühner ein. Die Hühner wollen ihre Eier zurück!</p>
+        <ul>
+            <li><kbd>←</kbd> <kbd>→</kbd> laufen</li>
+            <li><kbd>↑</kbd> oder <kbd>Leertaste</kbd> springen</li>
+            <li><kbd>D</kbd> eine eingesammelte Chili werfen</li>
+        </ul>
+        <p>Überspringe die Kakteen. Triff den Eierwächter dreimal mit Chilis und spring ihm dann auf den Kopf. Sammle zum Schluss sein goldenes Ei ein.</p>
+    </dialog>
 
 </body>
 

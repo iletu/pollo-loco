@@ -12,7 +12,7 @@ class SmallChicken extends Chicken {
     }
 
     startMoving() {
-        return setInterval(() => {
+        return setGameInterval(() => {
             this.stepsUntilChange--;
             if (this.stepsUntilChange <= 0) {
                 // Nach einer zufälligen Zeit ändern sich Tempo und Richtung.

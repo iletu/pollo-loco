@@ -25,7 +25,7 @@ class ThrownChili extends Chili {
     this.gravityInterval = this.applyGravity();
     let movementSteps = 0;
 
-    this.movementInterval = setInterval(() => {
+    this.movementInterval = setGameInterval(() => {
       this.x += step;
       movementSteps++;
       // Nach vier Bewegungsschritten kommt das nächste Drehbild.

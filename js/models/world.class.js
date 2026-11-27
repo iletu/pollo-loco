@@ -1,6 +1,8 @@
 class World {
   character = new Character();
-  level = level1;
+  level = createLevel1();
+  animationFrame;
+  stopped = false;
 
   canvas;
   ctx;
@@ -125,11 +127,11 @@ class World {
 
   run() {
     // Kürzere Abstände helfen, kurze Berührungen zu erkennen.
-    setInterval(() => {
+    setGameInterval(() => {
       this.checkCollisions();
     }, 50);
 
-    setInterval(() => {
+    setGameInterval(() => {
       this.checkThrowObjects();
       this.checkChickenSounds();
     }, 200);
@@ -137,7 +139,7 @@ class World {
 
   checkChickenSounds() {
     // Die Aufnahme dauert gut zwei Sekunden und soll ganz ausspielen.
-    if (this.character.isDead() || Date.now() - this.lastChickenCluck < 2400) {
+    if (this.character.isDead() || gameTime() - this.lastChickenCluck < 2400) {
       return;
     }
 
@@ -147,7 +149,7 @@ class World {
       Math.abs(enemy.x - this.character.x) < 240
     );
     if (nearbyChicken) {
-      this.lastChickenCluck = Date.now();
+      this.lastChickenCluck = gameTime();
       this.character.playSound(this.chickenCluckSound);
     }
   }
@@ -161,7 +163,7 @@ class World {
   throwChili() {
     // Ohne Vorrat, im Tod oder innerhalb der Wartezeit wird kein Wurf gestartet.
     if (this.chiliCounter.amount === 0 || this.character.isDead() || this.bossEggCollectedAt !== null ||
-        Date.now() - this.lastThrow < 200) {
+        gameTime() - this.lastThrow < 200) {
       return;
     }
 
@@ -181,7 +183,7 @@ class World {
     this.thrownChilis.push(chili);
     // Ein erfolgreicher Wurf verbraucht genau eine Chili.
     this.chiliCounter.amount--;
-    this.lastThrow = Date.now();
+    this.lastThrow = gameTime();
     this.character.playSound(this.chiliThrowSound);
   }
 
@@ -215,7 +217,6 @@ class World {
       if (!enemy.isDead() && enemy.isColliding(hitbox) && !this.character.isHurt()) {
         this.character.hit(5);
         this.statusBar.setPercentage(this.character.energy);
-        console.log("Collision with Character, energy ", this.character.energy);
       }
     });
   }
@@ -318,7 +319,7 @@ class World {
     if (this.bossEgg && this.character.isColliding(this.bossEgg)) {
       this.bossEgg.stopAnimation();
       this.bossEgg = null;
-      this.bossEggCollectedAt = Date.now();
+      this.bossEggCollectedAt = gameTime();
       this.character.lastAction = this.bossEggCollectedAt;
       this.character.setLoopSound(null);
       this.bossEggSound.pause();
@@ -342,13 +343,13 @@ class World {
 
   playEggSound() {
     // Bei mehreren Eiern liegen die Töne kurz auseinander.
-    const now = Date.now();
+    const now = gameTime();
     const delay = Math.max(0, this.nextEggSoundAt - now);
     this.nextEggSoundAt = now + delay + 120;
     if (delay === 0) {
       this.character.playSound(this.eggSound);
     } else {
-      setTimeout(() => this.character.playSound(this.eggSound), delay);
+      setGameTimeout(() => this.character.playSound(this.eggSound), delay);
     }
   }
 
@@ -365,6 +366,13 @@ class World {
   }
 
   draw() {
+    if (this.stopped || pausedAt !== null) {
+      return;
+    }
+    updatePlayButton(this);
+    if (this.character.isDead() || this.bossEggCollectedAt !== null) {
+      fadeBackgroundMusic();
+    }
     // Pro Bild prüfen, damit Pepe auch beim Springen einsammelt.
     if (!this.character.isDead()) {
       this.collectGoldenEggs();
@@ -421,7 +429,7 @@ class World {
 
     // Draw() wird immer wieder aufgerufen
     let self = this;
-    requestAnimationFrame(function () {
+    this.animationFrame = requestAnimationFrame(function () {
       self.draw();
     });
   }
@@ -454,9 +462,9 @@ class World {
     }
     if (this.bossHintPhase !== phase) {
       this.bossHintPhase = phase;
-      this.bossHintStartedAt = Date.now();
+      this.bossHintStartedAt = gameTime();
     }
-    if (Date.now() - this.bossHintStartedAt >= 4500) {
+    if (gameTime() - this.bossHintStartedAt >= 4500) {
       return;
     }
 
@@ -495,7 +503,7 @@ class World {
       return;
     }
 
-    const elapsed = Date.now() - this.bossEggCollectedAt;
+    const elapsed = gameTime() - this.bossEggCollectedAt;
     // Erst anheben, kurz schweben und dann wieder absenken.
     const rise = Math.min(elapsed / 350, 1);
     const descent = Math.min((this.celebrationDuration - elapsed) / 400, 1);
@@ -515,7 +523,7 @@ class World {
 
   drawDefeatedCharacter() {
     const pepe = this.character;
-    const elapsed = Date.now() - pepe.lastHit;
+    const elapsed = gameTime() - pepe.lastHit;
     if (elapsed >= this.defeatFlashDuration) {
       this.drawRetreat(elapsed - this.defeatFlashDuration);
       return;
@@ -541,7 +549,7 @@ class World {
       this.createDefeatFlock();
     }
 
-    const runningTime = Math.max(0, Date.now() - this.character.lastHit - this.defeatFlashDuration);
+    const runningTime = Math.max(0, gameTime() - this.character.lastHit - this.defeatFlashDuration);
     const rightScreenEdge = this.canvas.width - this.camera_x;
     for (let i = 0; i < this.defeatFlock.length; i++) {
       const chicken = this.defeatFlock[i];
@@ -581,7 +589,7 @@ class World {
   }
 
   getRetreatX() {
-    const runningTime = Math.max(0, Date.now() - this.character.lastHit - this.defeatFlashDuration);
+    const runningTime = Math.max(0, gameTime() - this.character.lastHit - this.defeatFlashDuration);
     return this.character.x - runningTime * 0.48;
   }
 
@@ -599,7 +607,7 @@ class World {
   drawVictoryExit() {
     const pepe = this.character;
     // Der Schriftzug steht schon kurz da, bevor Pepe losläuft.
-    const runningTime = Date.now() - this.bossEggCollectedAt - this.celebrationDuration - 300;
+    const runningTime = gameTime() - this.bossEggCollectedAt - this.celebrationDuration - 300;
     const x = pepe.x + Math.max(0, runningTime) * 0.48;
     if (x + this.camera_x >= this.canvas.width) {
       pepe.setLoopSound(null);
@@ -651,7 +659,7 @@ class World {
 
   isCelebrating() {
     return this.bossEggCollectedAt !== null &&
-      Date.now() - this.bossEggCollectedAt < this.celebrationDuration;
+      gameTime() - this.bossEggCollectedAt < this.celebrationDuration;
   }
 
   addObjectsToMap(objects) {
