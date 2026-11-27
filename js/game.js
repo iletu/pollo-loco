@@ -2,9 +2,26 @@ let canvas;
 let world;
 let keyboard = new Keyboard();
 const gameSounds = [];
-let isMuted = false;
+const muteStorageKey = "polloLocoMuted";
+let isMuted = loadMuteSetting();
 let musicFading = false;
 let pausedSounds = [];
+
+function loadMuteSetting() {
+  try {
+    return localStorage.getItem(muteStorageKey) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function saveMuteSetting() {
+  try {
+    localStorage.setItem(muteStorageKey, String(isMuted));
+  } catch {
+    // Bei gesperrtem Speicher gilt die Einstellung für diese Seite.
+  }
+}
 
 function createGameSound(path) {
   const sound = new Audio(path);
@@ -19,6 +36,7 @@ backgroundMusic.loop = true;
 
 function toggleMute(event) {
   isMuted = !isMuted;
+  saveMuteSetting();
   // Auch Töne, die gerade laufen, werden sofort stumm.
   gameSounds.forEach((sound) => {
     sound.muted = isMuted;
@@ -66,6 +84,7 @@ window.addEventListener("pointerdown", (event) => {
 
 function init() {
   canvas = document.getElementById("canvas");
+  document.getElementById("mute-button").setAttribute("aria-pressed", String(isMuted));
 }
 
 function restartGame(event) {
