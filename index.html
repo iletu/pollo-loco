@@ -43,7 +43,7 @@
             <img class="home-trailer" src="./img/12_ui/trailer-sun-clouds.png" alt="Pepe flieht mit einem goldenen Ei vor dem Eierwächter und seiner Hühnerschar.">
             <p class="home-caption">Hol dir die goldenen Eier<br>und stell dich dem Eierwächter!</p>
         </section>
-        <canvas id="canvas" width="720" height="480" hidden></canvas>
+        <canvas id="canvas" width="854" height="480" tabindex="-1" hidden></canvas>
         <div class="game-toolbar">
             <button id="home-button" type="button" aria-label="Zur Startseite" onclick="showHome()" hidden>
                 <span class="home-icon" aria-hidden="true"></span>
@@ -57,6 +57,9 @@
             </button>
             <button id="help-button" type="button" aria-label="Spielanleitung öffnen" aria-haspopup="dialog" aria-controls="help-dialog" onclick="document.getElementById('help-dialog').showModal()">
                 <span class="direction-icon" aria-hidden="true"></span>
+            </button>
+            <button id="wide-button" type="button" aria-label="Vollbild öffnen" aria-controls="canvas" aria-pressed="false" onclick="toggleCanvasWidth()" hidden>
+                <span aria-hidden="true">⛶</span>
             </button>
         </div>
     </div>

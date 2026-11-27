@@ -122,7 +122,36 @@ function setGameScreen(isPlaying) {
   canvas.hidden = !isPlaying;
   document.getElementById("home-screen").hidden = isPlaying;
   document.getElementById("home-button").hidden = !isPlaying;
+  const wideButton = document.getElementById("wide-button");
+  wideButton.hidden = !isPlaying;
+  if (!isPlaying) {
+    if (document.fullscreenElement === canvas.parentElement) {
+      toggleCanvasWidth();
+    }
+  }
 }
+
+async function toggleCanvasWidth() {
+  try {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen();
+    } else {
+      await canvas.parentElement.requestFullscreen();
+    }
+  } catch {
+    // Der Browser kann Vollbild verweigern.
+  }
+}
+
+document.addEventListener("fullscreenchange", () => {
+  const isFullscreen = document.fullscreenElement === canvas?.parentElement;
+  const button = document.getElementById("wide-button");
+  button.setAttribute("aria-pressed", String(isFullscreen));
+  button.setAttribute("aria-label", isFullscreen ? "Vollbild verlassen" : "Vollbild öffnen");
+  if (isFullscreen) {
+    canvas.focus({ preventScroll: true });
+  }
+});
 
 function updatePlayButton(round) {
   const button = document.getElementById("restart-button");
@@ -208,6 +237,7 @@ window.addEventListener("keydown", (event) => {
   }
 
   if (event.code === "Space") {
+    event.preventDefault();
     keyboard.SPACE = true;
   }
 

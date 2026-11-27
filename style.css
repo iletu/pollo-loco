@@ -88,8 +88,46 @@ canvas {
     display: block;
     width: 100%;
     height: auto;
+    aspect-ratio: 16 / 9;
     border-radius: 14px;
     background-color: black;
+}
+
+.game-frame:fullscreen {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: #f7d1a0 url("./img/11_page_background/desert.png") center / cover no-repeat;
+    overflow: hidden;
+    filter: none;
+}
+
+.game-frame:fullscreen canvas {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: min(100vw, calc(100dvh * 16 / 9));
+    height: auto;
+    max-height: 100dvh;
+    border-radius: 0;
+}
+
+.game-frame:fullscreen .game-title,
+.game-frame:fullscreen .game-toolbar > :not(#wide-button) {
+    display: none;
+}
+
+.game-frame:fullscreen .game-toolbar {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    min-height: 0;
+    padding: 0;
 }
 
 [hidden] {
@@ -181,7 +219,8 @@ canvas {
 }
 
 #home-button,
-#help-button {
+#help-button,
+#wide-button {
     width: 34px;
     height: 34px;
     padding: 0;
@@ -191,6 +230,15 @@ canvas {
                 #492819 url("./img/12_ui/wood.png") center / 120px;
     color: #d8a957;
     cursor: pointer;
+}
+
+#wide-button {
+    font: 22px / 1 sans-serif;
+}
+
+#wide-button[aria-pressed="true"] {
+    outline: 2px solid #ffd573;
+    outline-offset: 2px;
 }
 
 .home-icon,
